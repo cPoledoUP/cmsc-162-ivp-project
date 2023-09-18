@@ -10,7 +10,7 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter.filedialog import askopenfilename
 from PIL import ImageTk, Image
-
+ 
 class App(tk.Tk):
     """
     Represents the app
@@ -28,7 +28,6 @@ class App(tk.Tk):
         # add widgets
         self.menu_bar = Menubar(self)
         self.main = Main(self)
-
         # run the app
         self.mainloop()
     
@@ -91,11 +90,15 @@ class Main(ttk.Frame):
 
         # initialize
         super().__init__(parent)
-        self.pack()
-
         # add widgets
         self.image_frame = ImageFrame(self)
-
+        self.image_metadata = MetaDataFrame(self)
+        # self.grid(row=0,column=0,sticky="nwes")
+        # self.grid_columnconfigure(0, weight=1)
+        # self.grid_rowconfigure(0, weight=1)
+        self.pack(fill="both",padx=10, pady=10, expand=True)
+        self.configure(relief=tk.SUNKEN)
+        
 class ImageFrame(ttk.Label):
     """
     Contains the image display area of the app
@@ -105,7 +108,7 @@ class ImageFrame(ttk.Label):
 
         # initialize
         super().__init__(parent)
-        self.pack(padx=10, pady=10)
+        self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)     
         self.width = 960
         self.height = 720
 
@@ -130,5 +133,27 @@ class ImageFrame(ttk.Label):
         self['image'] = None
         self.image = None
 
+class MetaDataFrame (tk.Frame):
+    """
+    Represents the Metadata frame
+    """
+    def __init__(self, parent):
+        #initialize
+        super().__init__(parent)
+        self.message = MetaData(self)
+        self.pack(side = tk.RIGHT, fill=tk.Y, padx=10, pady=10)   
+        self.configure(bg='blue', width=200, relief="raised")
+        # self.label = ttk.Label(self)
+        # self.label.pack(padx=20,pady=20)
+
+class MetaData (tk.Message):
+    """
+    the data retrieved from the Imported Image
+    """ 
+    def __init__(self, parent):
+        #initialize
+        super().__init__(parent)
+        self.configure(text="data goes here", width=100)
+        self.pack(padx=10, pady=10)
 
 App("test", "1280x720", True)

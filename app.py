@@ -32,7 +32,7 @@ class App(tk.Tk):
         self.mainloop()
     
     def menu_open(self):
-        ftypes = [('image files', ['*.jpg', '*.png', '*.tiff'])]
+        ftypes = [('image files', ['*.jpg', '*.png', '*.tiff', '*.ppm', '*.gif', '*.bmp'])]
         file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
         image = Image.open(file.name)
         self.main.image_frame.display_image(image)
@@ -91,12 +91,13 @@ class Main(ttk.Frame):
         # initialize
         super().__init__(parent)
         # add widgets
+        self.image_metadata = MetaDataFrame(self, tk.LEFT)
         self.image_frame = ImageFrame(self)
-        self.image_metadata = MetaDataFrame(self)
+        self.image_metadata = MetaDataFrame(self, tk.RIGHT)
         # self.grid(row=0,column=0,sticky="nwes")
         # self.grid_columnconfigure(0, weight=1)
         # self.grid_rowconfigure(0, weight=1)
-        self.pack(fill="both",padx=10, pady=10, expand=True)
+        self.pack(fill="both", expand=True)
         self.configure(relief=tk.SUNKEN)
         
 class ImageFrame(ttk.Label):
@@ -111,6 +112,7 @@ class ImageFrame(ttk.Label):
         self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)     
         self.width = 960
         self.height = 720
+        print(self.winfo_width())
 
     def display_image(self, image):
 
@@ -137,11 +139,12 @@ class MetaDataFrame (tk.Frame):
     """
     Represents the Metadata frame
     """
-    def __init__(self, parent):
+
+    def __init__(self, parent, location):
         #initialize
         super().__init__(parent)
         self.message = MetaData(self)
-        self.pack(side = tk.RIGHT, fill=tk.Y, padx=10, pady=10)   
+        self.pack(side = location, fill=tk.Y)   
         self.configure(bg='blue', width=200, relief="raised")
         # self.label = ttk.Label(self)
         # self.label.pack(padx=20,pady=20)
@@ -150,10 +153,11 @@ class MetaData (tk.Message):
     """
     the data retrieved from the Imported Image
     """ 
+
     def __init__(self, parent):
         #initialize
         super().__init__(parent)
-        self.configure(text="data goes here", width=100)
-        self.pack(padx=10, pady=10)
+        self.configure(text="some data/ui elements go here", width=200, font=('Helvetica Bold', 30))
+        self.pack(padx=10, pady=10, expand=True)
 
-App("test", "1280x720", True)
+App("IVP App", "1280x720", True)

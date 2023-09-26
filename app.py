@@ -34,18 +34,15 @@ class App(tk.Tk):
         self.mainloop()
         
     def menu_open(self):
-        
-        ftypes = [('image files', ['*.pcx'])]
+        ftypes = [('pcx file', ['*.pcx']), ('image files', ['*.jpg', '*.png', '*.tiff', '*.ppm', '*.gif', '*.bmp'])]
         file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
-        pcxViewer = PcxImage(file.name)
-        image = pcxViewer.get_image()
-        self.main.image_frame.display_image(image)
+
+        if file.name.endswith('.pcx'):
+            image = PcxImage(file.name).get_image()
+        else:
+            image = Image.open(file.name)
         
-    # def menu_open(self):
-    #     ftypes = [('image files', ['*.jpg', '*.png', '*.tiff', '*.ppm', '*.gif', '*.bmp'])]
-    #     file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
-    #     image = Image.open(file.name)
-    #     self.main.image_frame.display_image(image)
+        self.main.image_frame.display_image(image)
 
     def menu_close(self):
         self.main.image_frame.remove_image()
@@ -169,7 +166,5 @@ class MetaData (tk.Message):
         super().__init__(parent)
         self.configure(text="some data/ui elements go here", width=200, font=('Helvetica Bold', 30))
         self.pack(padx=10, pady=10, expand=True)
-
-# matrix = [[(0, 0, 0) , (0, 0, 0) , (255, 0, 0) , (0, 0, 0) , (0, 0, 0) ], [(0, 0, 0) , (0, 0, 0) , (255, 0, 0) , (0, 0, 0) , (0, 0, 0) ]]
 
 App("IVP App", "1280x720", True)

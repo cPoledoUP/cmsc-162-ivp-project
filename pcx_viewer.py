@@ -1,6 +1,6 @@
-# from PIL import Image
-# import numpy as np
-
+from PIL import Image, ImageDraw
+import numpy as np
+import matplotlib.pyplot as plt
 class PcxImage:
 
     def __init__(self, location):
@@ -122,7 +122,26 @@ class PcxImage:
     
     def get_filler(self):
         return self.filler
-
+    
+    def get_image_palette(self):
+        rgb_values = self.get_palette_data()
+        
+        for i, value in enumerate(rgb_values):
+            rgb_values[i] = tuple(value)
+         
+        pixel_length = 50     
+        target_size = 16
+        
+        image = Image.new(mode="RGB", size=(target_size*pixel_length, target_size*pixel_length))
+        
+        draw = ImageDraw.Draw(image)
+    
+        for y in range (target_size): 
+            for x in range (target_size):
+                draw.rectangle([x * pixel_length,y * pixel_length, x * pixel_length + pixel_length, y * pixel_length + pixel_length], fill=rgb_values[y*target_size+x])  
+                      
+        return image
+    
     # def get_image_buffer(self):
     #     # https://people.sc.fsu.edu/~jburkardt/txt/pcx_format.txt
     #     window = self.get_window()
@@ -205,7 +224,6 @@ class PcxImage:
 
         
         return palette
-
 # img = PcxImage('sample_640×426.pcx')
 # img2 = PcxImage('bunny.pcx')
 # print(img2.get_image_buffer())

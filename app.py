@@ -10,7 +10,8 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter.filedialog import askopenfilename
 from PIL import ImageTk, Image
- 
+from pcx_viewer import *
+
 class App(tk.Tk):
     """
     Represents the app
@@ -28,14 +29,23 @@ class App(tk.Tk):
         # add widgets
         self.menu_bar = Menubar(self)
         self.main = Main(self)
+        
         # run the app
         self.mainloop()
-    
+        
     def menu_open(self):
-        ftypes = [('image files', ['*.jpg', '*.png', '*.tiff', '*.ppm', '*.gif', '*.bmp'])]
+        
+        ftypes = [('image files', ['*.pcx'])]
         file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
-        image = Image.open(file.name)
+        pcxViewer = PcxImage(file.name)
+        image = pcxViewer.get_image_palette()
         self.main.image_frame.display_image(image)
+        
+    # def menu_open(self):
+    #     ftypes = [('image files', ['*.jpg', '*.png', '*.tiff', '*.ppm', '*.gif', '*.bmp'])]
+    #     file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
+    #     image = Image.open(file.name)
+    #     self.main.image_frame.display_image(image)
 
     def menu_close(self):
         self.main.image_frame.remove_image()
@@ -94,6 +104,7 @@ class Main(ttk.Frame):
         self.image_metadata = MetaDataFrame(self, tk.LEFT)
         self.image_frame = ImageFrame(self)
         self.image_metadata = MetaDataFrame(self, tk.RIGHT)
+         
         # self.grid(row=0,column=0,sticky="nwes")
         # self.grid_columnconfigure(0, weight=1)
         # self.grid_rowconfigure(0, weight=1)
@@ -158,5 +169,7 @@ class MetaData (tk.Message):
         super().__init__(parent)
         self.configure(text="some data/ui elements go here", width=200, font=('Helvetica Bold', 30))
         self.pack(padx=10, pady=10, expand=True)
+
+# matrix = [[(0, 0, 0) , (0, 0, 0) , (255, 0, 0) , (0, 0, 0) , (0, 0, 0) ], [(0, 0, 0) , (0, 0, 0) , (255, 0, 0) , (0, 0, 0) , (0, 0, 0) ]]
 
 App("IVP App", "1280x720", True)

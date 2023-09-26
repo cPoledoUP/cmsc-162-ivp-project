@@ -38,7 +38,7 @@ class App(tk.Tk):
         ftypes = [('image files', ['*.pcx'])]
         file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
         pcxViewer = PcxImage(file.name)
-        image = pcxViewer.get_image_palette()
+        image = pcxViewer.get_image()
         self.main.image_frame.display_image(image)
         
     # def menu_open(self):

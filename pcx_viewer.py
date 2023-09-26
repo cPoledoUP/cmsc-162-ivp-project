@@ -1,6 +1,5 @@
 from PIL import Image, ImageDraw
-import numpy as np
-import matplotlib.pyplot as plt
+
 class PcxImage:
 
     def __init__(self, location):
@@ -125,11 +124,8 @@ class PcxImage:
     
     def get_image_palette(self):
         rgb_values = self.get_palette_data()
-        
-        for i, value in enumerate(rgb_values):
-            rgb_values[i] = tuple(value)
          
-        pixel_length = 50     
+        pixel_length = 40     
         target_size = 16
         
         image = Image.new(mode="RGB", size=(target_size*pixel_length, target_size*pixel_length))
@@ -142,72 +138,59 @@ class PcxImage:
                       
         return image
     
-    # def get_image_buffer(self):
-    #     # https://people.sc.fsu.edu/~jburkardt/txt/pcx_format.txt
-    #     window = self.get_window()
-    #     width = window[2] - window[0] + 1
-    #     height = window[3] - window[1] + 1
-    #     bytes_per_line = self.get_bytes_per_line()
-    #     n_planes = self.get_n_planes()
-    #     scan_line_size = n_planes * bytes_per_line
+    def get_image_data(self):
+        # https://people.sc.fsu.edu/~jburkardt/txt/pcx_format.txt
 
-    #     image_buffer = list()
-    #     line_buffer = list()
-    #     plane_buffer = list()
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+        total_bytes = self.get_n_planes() * self.get_bytes_per_line()
 
-    #     current_line_count = 0
-    #     current_plane_count = 0
-    #     count = 0
-    #     current_height = 0
-    #     image_end_index = 0
+        image_buffer = self.image_buffer
+        image_data = list()
 
-    #     for i, byte in enumerate(self.image_buffer):
-    #         print(i)
-    #         if current_height >= height:
-    #             image_end_index = i
-    #             break
+        if self.get_version() == 5:
+            image_buffer = image_buffer[:-769]
 
-    #         # check if top 2 bits are set (and to 11000000 or 192 then check if the result is 11000000 or 192)
-    #         if byte & 192 == 192:
-    #             # return lower 6 bits (and to 00111111 or 63)
-    #             count = byte & 63
-    #         else:
-    #             if count == 0:
-    #                 current_line_count += 1
-    #                 current_plane_count += 1
-    #                 plane_buffer.append(byte)
-    #             else:
-    #                 for i in range(count):
-    #                     current_line_count += 1
-    #                     current_plane_count += 1
-    #                     plane_buffer.append(byte)
-    #                 count = 0
+        line_count = 0
+        line_buffer = list()
+        force_write_color = False
+
+        for byte in image_buffer:
+            if force_write_color:
+                for i in range(count):
+                    line_count += 1
+                    line_buffer.append(byte)
+                count = 0
+                force_write_color = False
+            elif byte & 192 == 192: # check if top 2 bits are set (and to 11000000 then check if the result is 11000000)
+                # return lower 6 bits (and to 00111111)
+                count = byte & 63
+                force_write_color = True
+            else:
+                line_count += 1
+                line_buffer.append(byte)
             
-    #         if current_plane_count >= n_planes:
-    #             line_buffer.append(plane_buffer)
-    #             current_plane_count = 0
-            
-    #         if current_line_count >= scan_line_size:
-    #             image_buffer.append(line_buffer)
-    #             current_line_count = 0
-    #             current_height += 1
+            if line_count >= total_bytes:
+                image_data.append(line_buffer[:width])
+                line_buffer = list()
+                line_count = 0
         
-    #     return image_buffer
+        return image_data
     
-    # def create_image(self):
-    #     window = self.get_window()
-    #     width = window[2] - window[0] + 1
-    #     height = window[3] - window[1] + 1
-    #     image_buffer = self.get_image_buffer()
-    #     line = list()
-    #     image = list()
-    #     for i, pix in enumerate(image_buffer):
-    #         line.append(pix)
-    #         if i % width == width - 1:
-    #             image.append(line)
-    #             line = list()
+    def get_image(self):
+        palette = self.get_palette_data()
+        img_data = self.get_image_data()
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+
+        disp_img = Image.new('RGB', (width, height))
+        for y, list in enumerate(img_data):
+            for x, pix in enumerate(list):
+                disp_img.putpixel((x, y), palette[pix])
         
-    #     return np.array(image)
+        return disp_img
 
     def get_palette_data(self):
         palette_bytes = list()
@@ -219,11 +202,11 @@ class PcxImage:
             for i in range(768):
                 rgb.append(palette_bytes[i])
                 if i % 3 == 2:
-                    palette.append(rgb)
+                    palette.append(tuple(rgb))
                     rgb = list()
-
-        
+  
         return palette
+
 # img = PcxImage('sample_640×426.pcx')
 # img2 = PcxImage('bunny.pcx')
 # print(img2.get_image_buffer())

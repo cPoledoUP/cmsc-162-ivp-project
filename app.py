@@ -109,7 +109,7 @@ class ImageFrame(ttk.Label):
 
         # initialize
         super().__init__(parent)
-        self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)     
+        self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)
         self.width = 960
         self.height = 720
 

@@ -38,7 +38,8 @@ class App(tk.Tk):
         file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
 
         if file.name.endswith('.pcx'):
-            image = PcxImage(file.name).get_image()
+            image = PcxImage(file.name).get_image() # image data
+            # palette = PcxImage(file.name).get_image_palette()   # palette data
         else:
             image = Image.open(file.name)
         
@@ -118,20 +119,20 @@ class ImageFrame(ttk.Label):
         # initialize
         super().__init__(parent)
         self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)
-        self.width = 960
-        self.height = 720
+        self.max_width = 960
+        self.max_height = 720
 
     def display_image(self, image):
 
         # resize image first to fit frame
-        if float(image.size[0])/float(image.size[1]) > self.width/self.height:
-            wpercent = self.width/float(image.size[0])
+        if float(image.size[0])/float(image.size[1]) > self.max_width/self.max_height:
+            wpercent = self.max_width/float(image.size[0])
             hsize = int((float(image.size[1])*float(wpercent)))
-            new_img = image.resize((self.width, hsize))
+            new_img = image.resize((self.max_width, hsize))
         else:
-            hpercent = self.height/float(image.size[1])
+            hpercent = self.max_height/float(image.size[1])
             wsize = int((float(image.size[0])*float(hpercent)))
-            new_img = image.resize((wsize, self.height))
+            new_img = image.resize((wsize, self.max_height))
 
         # put image in the img_container
         new_img = ImageTk.PhotoImage(new_img)

@@ -4,7 +4,8 @@ class PcxImage:
 
     def __init__(self, location):
         pcx_file = open(location, mode='br')
-
+        
+        self.location = location.split('/')[-1]
         self.manufacturer = pcx_file.read(1)
         self.version = pcx_file.read(1)
         self.encoding = pcx_file.read(1)
@@ -122,10 +123,9 @@ class PcxImage:
     def get_filler(self):
         return self.filler
     
-    def get_image_palette(self):
+    def get_image_palette(self, pixel_length):
         rgb_values = self.get_palette_data()
          
-        pixel_length = 40     
         target_size = 16
         
         image = Image.new(mode="RGB", size=(target_size*pixel_length, target_size*pixel_length))

@@ -39,12 +39,16 @@ class App(tk.Tk):
 
         if file.name.endswith('.pcx'):
             image = PcxImage(file.name).get_image() # image data
-            # palette = PcxImage(file.name).get_image_palette()   # palette data
+            palette = PcxImage(file.name).get_image_palette(20)   # image color palette
+            pcx_image = PcxImage(file.name) # to be used to retrieve metadata
         else:
             image = Image.open(file.name)
         
         self.main.image_frame.display_image(image)
-
+        self.main.palette_frame.display_palette(palette)
+        self.main.image_metadata.message.display_all(pcx_image)
+        
+        
     def menu_close(self):
         self.main.image_frame.remove_image()
 
@@ -99,17 +103,16 @@ class Main(ttk.Frame):
         # initialize
         super().__init__(parent)
         # add widgets
-        self.image_metadata = MetaDataFrame(self, tk.LEFT)
         self.image_frame = ImageFrame(self)
         self.image_metadata = MetaDataFrame(self, tk.RIGHT)
-         
+        self.palette_frame = PaletteFrame(self)
         # self.grid(row=0,column=0,sticky="nwes")
         # self.grid_columnconfigure(0, weight=1)
         # self.grid_rowconfigure(0, weight=1)
         self.pack(fill="both", expand=True)
         self.configure(relief=tk.SUNKEN)
         
-class ImageFrame(ttk.Label):
+class ImageFrame(tk.LabelFrame):
     """
     Contains the image display area of the app
     """
@@ -119,8 +122,11 @@ class ImageFrame(ttk.Label):
         # initialize
         super().__init__(parent)
         self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)
+        self.label = tk.Label(self)
+        self.label.pack()
         self.max_width = 960
         self.max_height = 720
+        self.configure(relief="flat")
 
     def display_image(self, image):
 
@@ -135,13 +141,35 @@ class ImageFrame(ttk.Label):
             new_img = image.resize((wsize, self.max_height))
 
         # put image in the img_container
+        self.configure(labelanchor='n', text="PCX IMAGE", font=('Helvetica Bold', 30))
         new_img = ImageTk.PhotoImage(new_img)
-        self['image'] = new_img
-        self.image = new_img
+        self.label['image'] = new_img
+        self.label.image = new_img
 
     def remove_image(self):
         self['image'] = None
         self.image = None
+
+class PaletteFrame(tk.LabelFrame):
+    """
+    Contains the color palette used in the .pcx image
+    """
+    def __init__(self, parent):
+        #initialize
+        super().__init__(parent)
+        self.pack(side = tk.RIGHT, expand=True,padx=10, pady=10)
+        self.label = tk.Label(self)
+        self.label.pack()
+        self.configure(relief="flat")
+        
+    
+    #displays the color palette of the image
+    def display_palette(self, image):
+        self.configure(labelanchor='n', text="COLOR PALETTE", font=('Helvetica Bold', 30))
+        image = ImageTk.PhotoImage(image)
+        self.label['image'] = image
+        self.label.image = image
+
 
 class MetaDataFrame (tk.Frame):
     """
@@ -153,7 +181,7 @@ class MetaDataFrame (tk.Frame):
         super().__init__(parent)
         self.message = MetaData(self)
         self.pack(side = location, fill=tk.Y)   
-        self.configure(bg='blue', width=200, relief="raised")
+        self.configure(bg='#808080', width=200, relief="ridge")
         # self.label = ttk.Label(self)
         # self.label.pack(padx=20,pady=20)
 
@@ -165,7 +193,26 @@ class MetaData (tk.Message):
     def __init__(self, parent):
         #initialize
         super().__init__(parent)
-        self.configure(text="some data/ui elements go here", width=200, font=('Helvetica Bold', 30))
+        self.configure(bg='#808080', text=".pcx Metadata goes here", width=400, font=('Helvetica Bold', 30))
         self.pack(padx=10, pady=10, expand=True)
+        
+    def display_all(self, image:PcxImage):
+        all_data =  f"""
+                    File Name: {image.location}
+                    Manufacturer: {image.get_manufacturer()}
+                    Version: {image.get_version()}
+                    Encoding: {image.get_encoding()}
+                    Bits per Pixel: {image.get_bits_per_pixel()}
+                    Image Dimensions: {image.get_window()}
+                    HDPI: {image.get_hdpi()}
+                    VDPI: {image.get_vdpi()}
+                    Number of Color Planes: {image.get_n_planes()}
+                    Bytes per Line: {image.get_bytes_per_line()}
+                    Palette Information: {image.get_palette_info()}
+                    Horizontal Screen Size: {image.get_h_screen_size()}
+                    Vertical Screen Size: {image.get_v_screen_size()}
+                    """
+        self.configure(bg='#808080', text= "IMAGE METADATA \n" + all_data, font=('Helvetica', 12))
+        
 
 App("IVP App", "1280x720", True)

@@ -39,7 +39,7 @@ class App(tk.Tk):
 
         if file.name.endswith('.pcx'):
             image = PcxImage(file.name).get_image() # image data
-            palette = PcxImage(file.name).get_image_palette(20)   # image color palette
+            palette = PcxImage(file.name).get_image_palette(15)   # image color palette
             pcx_image = PcxImage(file.name) # to be used to retrieve metadata
         else:
             image = Image.open(file.name)
@@ -165,7 +165,7 @@ class PaletteFrame(tk.LabelFrame):
     
     #displays the color palette of the image
     def display_palette(self, image):
-        self.configure(labelanchor='n', text="COLOR PALETTE", font=('Helvetica Bold', 30))
+        self.configure(labelanchor='n', text="COLOR PALETTE", font=('Helvetica Bold', 15))
         image = ImageTk.PhotoImage(image)
         self.label['image'] = image
         self.label.image = image
@@ -193,26 +193,28 @@ class MetaData (tk.Message):
     def __init__(self, parent):
         #initialize
         super().__init__(parent)
-        self.configure(bg='#808080', text=".pcx Metadata goes here", width=400, font=('Helvetica Bold', 30))
+        self.configure(bg='#808080', text=".pcx Metadata goes here", width=200, font=('Helvetica Bold', 30))
         self.pack(padx=10, pady=10, expand=True)
         
     def display_all(self, image:PcxImage):
+        header = "IMAGE METADATA:\n"
         all_data =  f"""
-                    File Name: {image.location}
-                    Manufacturer: {image.get_manufacturer()}
-                    Version: {image.get_version()}
-                    Encoding: {image.get_encoding()}
-                    Bits per Pixel: {image.get_bits_per_pixel()}
-                    Image Dimensions: {image.get_window()}
-                    HDPI: {image.get_hdpi()}
-                    VDPI: {image.get_vdpi()}
-                    Number of Color Planes: {image.get_n_planes()}
-                    Bytes per Line: {image.get_bytes_per_line()}
-                    Palette Information: {image.get_palette_info()}
-                    Horizontal Screen Size: {image.get_h_screen_size()}
-                    Vertical Screen Size: {image.get_v_screen_size()}
+File Name: {image.location}
+Manufacturer: {image.get_manufacturer()}
+Version: {image.get_version()}
+Encoding: {image.get_encoding()}
+Bits per Pixel: {image.get_bits_per_pixel()}
+Image Dimensions: {image.get_window()}
+HDPI: {image.get_hdpi()}
+VDPI: {image.get_vdpi()}
+Number of Color Planes: {image.get_n_planes()}
+Bytes per Line: {image.get_bytes_per_line()}
+Palette Information: {image.get_palette_info()}
+Horizontal Screen Size: {image.get_h_screen_size()}
+Vertical Screen Size: {image.get_v_screen_size()}
                     """
-        self.configure(bg='#808080', text= "IMAGE METADATA \n" + all_data, font=('Helvetica', 12))
+
+        self.configure(bg='#808080', text= header + all_data, font=('Helvetica', 12))
         
 
 App("IVP App", "1280x720", True)

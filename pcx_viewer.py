@@ -22,7 +22,7 @@ class PcxImage:
         self.v_screen_size = pcx_file.read(2)
         self.filler = pcx_file.read(54)
         self.image_buffer = pcx_file.read()
-
+        
         pcx_file.close()
     
     def get_manufacturer(self):
@@ -126,7 +126,7 @@ class PcxImage:
     def get_palette_data(self):
         palette_bytes = list()
         palette = list()
-        if self.get_version() == 5:
+        if self.get_version() == 5 and self.image_buffer[-769] == 12:
             # get last 768 bytes
             palette_bytes = self.image_buffer[-768:]
             rgb = list()
@@ -144,6 +144,9 @@ class PcxImage:
         target_size = 16
         
         image = Image.new(mode="RGB", size=(target_size*pixel_length, target_size*pixel_length))
+
+        if len(rgb_values) == 0:
+            return image
         
         draw = ImageDraw.Draw(image)
     
@@ -164,7 +167,7 @@ class PcxImage:
         image_buffer = self.image_buffer
         image_data = list()
 
-        if self.get_version() == 5:
+        if self.get_version() == 5 and image_buffer[-769] == 12:
             image_buffer = image_buffer[:-769]
 
         line_count = 0
@@ -187,7 +190,7 @@ class PcxImage:
                 line_buffer.append(byte)
             
             if line_count >= total_bytes:
-                image_data.append(line_buffer[:width])
+                image_data.append(line_buffer)
                 line_buffer = list()
                 line_count = 0
         
@@ -201,10 +204,27 @@ class PcxImage:
         height = dimensions[3] - dimensions[1] + 1
 
         disp_img = Image.new('RGB', (width, height))
-        for y, list in enumerate(img_data):
-            for x, pix in enumerate(list):
-                disp_img.putpixel((x, y), palette[pix])
-        
+
+        if len(palette) != 0:   # palette at eof exist, use that
+            for y, list in enumerate(img_data):
+                for x, pix in enumerate(list):
+                    disp_img.putpixel((x, y), palette[pix])
+        elif self.get_bits_per_pixel() == 1 and self.get_n_planes() == 1:   # monochrome
+            for y, list in enumerate(img_data):
+                for x, pix in enumerate(list):
+                    for i, bit in enumerate(bin(pix)[2:]):  # 1 bit per pixel, pix is 8 bits (1 byte)
+                        color = int(bit) * 255
+                        disp_img.putpixel((x * 8 + i, y), (color, color, color))
+        elif self.get_bits_per_pixel() == 8 and self.get_n_planes() == 3:   # not using palette (16.7 mil color)
+            for y, list in enumerate(img_data):
+                row_len = len(list)
+                color_size = int(row_len / 3)
+                r = list[:color_size]
+                g = list[color_size: color_size*2]
+                b = list[color_size*2: color_size*3]
+                for x in range(color_size):
+                    disp_img.putpixel((x, y), (r[x], g[x], b[x]))
+
         return disp_img
 
 # img = PcxImage('sample_640×426.pcx')

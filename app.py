@@ -41,16 +41,20 @@ class App(tk.Tk):
             image = PcxImage(file.name).get_image() # image data
             palette = PcxImage(file.name).get_image_palette(15)   # image color palette
             pcx_image = PcxImage(file.name) # to be used to retrieve metadata
+            self.main.palette_frame.display_palette(palette)
+            self.main.image_metadata.message.display_all(pcx_image)
         else:
             image = Image.open(file.name)
+            self.main.palette_frame.remove_palette()
+            self.main.image_metadata.message.remove_display()
         
         self.main.image_frame.display_image(image)
-        self.main.palette_frame.display_palette(palette)
-        self.main.image_metadata.message.display_all(pcx_image)
         
         
     def menu_close(self):
         self.main.image_frame.remove_image()
+        self.main.palette_frame.remove_palette()
+        self.main.image_metadata.message.remove_display()
 
 class Menubar(tk.Menu):
     """
@@ -147,8 +151,9 @@ class ImageFrame(tk.LabelFrame):
         self.label.image = new_img
 
     def remove_image(self):
-        self['image'] = None
-        self.image = None
+        self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
+        self.label['image'] = None
+        self.label.image = None
 
 class PaletteFrame(tk.LabelFrame):
     """
@@ -169,6 +174,11 @@ class PaletteFrame(tk.LabelFrame):
         image = ImageTk.PhotoImage(image)
         self.label['image'] = image
         self.label.image = image
+
+    def remove_palette(self):
+        self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
+        self.label['image'] = None
+        self.label.image = None
 
 
 class MetaDataFrame (tk.Frame):
@@ -215,6 +225,9 @@ Vertical Screen Size: {image.get_v_screen_size()}
                     """
 
         self.configure(bg='#808080', text= header + all_data, font=('Helvetica', 12))
+    
+    def remove_display(self):
+        self.configure(bg='#808080', text=".pcx Metadata goes here", width=200, font=('Helvetica Bold', 30))
         
 
 App("IVP App", "1280x720", True)

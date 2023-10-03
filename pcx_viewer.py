@@ -122,6 +122,21 @@ class PcxImage:
     
     def get_filler(self):
         return self.filler
+
+    def get_palette_data(self):
+        palette_bytes = list()
+        palette = list()
+        if self.get_version() == 5:
+            # get last 768 bytes
+            palette_bytes = self.image_buffer[-768:]
+            rgb = list()
+            for i in range(768):
+                rgb.append(palette_bytes[i])
+                if i % 3 == 2:
+                    palette.append(tuple(rgb))
+                    rgb = list()
+  
+        return palette
     
     def get_image_palette(self, pixel_length):
         rgb_values = self.get_palette_data()
@@ -191,21 +206,6 @@ class PcxImage:
                 disp_img.putpixel((x, y), palette[pix])
         
         return disp_img
-
-    def get_palette_data(self):
-        palette_bytes = list()
-        palette = list()
-        if self.get_version() == 5:
-            # get last 768 bytes
-            palette_bytes = self.image_buffer[-768:]
-            rgb = list()
-            for i in range(768):
-                rgb.append(palette_bytes[i])
-                if i % 3 == 2:
-                    palette.append(tuple(rgb))
-                    rgb = list()
-  
-        return palette
 
 # img = PcxImage('sample_640×426.pcx')
 # img2 = PcxImage('bunny.pcx')

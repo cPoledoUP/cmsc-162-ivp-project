@@ -227,12 +227,46 @@ class PcxImage:
 
         return disp_img
 
-# img = PcxImage('sample_640×426.pcx')
-# img2 = PcxImage('bunny.pcx')
-# print(img2.get_image_buffer())
-# print(img2.get_image())
-# print(PcxImage('scene1.pcx').get_palette_data())
+    def get_color_channels(self):
+        red = []
+        green = []
+        blue = []
 
-# image = img.create_image()
-# im = Image.fromarray(image)
-# im.show()
+        pixel_data = self.get_image_data()
+        color_palette = self.get_palette_data()
+
+        for list in pixel_data:
+            for index in list:
+                red.append(color_palette[index][0])
+                green.append(color_palette[index][1])
+                blue.append(color_palette[index][2])
+        
+        return {
+            'red': red,
+            'green': green,
+            'blue': blue
+        }
+    
+    def show_color_channel_images(self, color):
+        color_data = self.get_color_channels()[color]
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+
+        for i in range(len(color_data)):
+            if color == 'red':
+                color_data[i] = (color_data[i], 0, 0)
+            elif color == 'green':
+                color_data[i] = (0, color_data[i], 0)
+            elif color == 'blue':
+                color_data[i] = (0, 0, color_data[i])
+
+        disp_img = Image.new('RGB', (width, height))
+
+        for y in range(height):
+            for x in range(width):
+                disp_img.putpixel((x, y), color_data[y * width + x])
+        
+        return disp_img
+        
+PcxImage('scene.pcx').show_color_channel_images('blue').show()

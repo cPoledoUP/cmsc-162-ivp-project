@@ -11,6 +11,11 @@ from tkinter import messagebox
 from tkinter.filedialog import askopenfilename
 from PIL import ImageTk, Image
 from pcx_viewer import *
+from matplotlib import pyplot as plt
+import numpy as np
+from tkinter import * 
+from matplotlib.figure import Figure 
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
 
 class App(tk.Tk):
     """
@@ -39,10 +44,11 @@ class App(tk.Tk):
 
         if file.name.endswith('.pcx'):
             image = PcxImage(file.name).get_image() # image data
-            palette = PcxImage(file.name).get_image_palette(15)   # image color palette
+            palette = PcxImage(file.name).get_image_palette(5)   # image color palette
             pcx_image = PcxImage(file.name) # to be used to retrieve metadata
             self.main.palette_frame.display_palette(palette)
             self.main.image_metadata.message.display_all(pcx_image)
+            self.main.histogram_frame.red_histogram(pcx_image)
         else:
             image = Image.open(file.name)
             self.main.palette_frame.remove_palette()
@@ -107,6 +113,7 @@ class Main(ttk.Frame):
         # initialize
         super().__init__(parent)
         # add widgets
+        self.histogram_frame = HistogramFrame(self, tk.LEFT)
         self.image_frame = ImageFrame(self)
         self.image_metadata = MetaDataFrame(self, tk.RIGHT)
         self.palette_frame = PaletteFrame(self)
@@ -128,8 +135,8 @@ class ImageFrame(tk.LabelFrame):
         self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)
         self.label = tk.Label(self)
         self.label.pack()
-        self.max_width = 960
-        self.max_height = 720
+        self.max_width = 500
+        self.max_height = 240
         self.configure(relief="flat")
 
     def display_image(self, image):
@@ -180,6 +187,28 @@ class PaletteFrame(tk.LabelFrame):
         self.label['image'] = None
         self.label.image = None
 
+class HistogramFrame (tk.Frame):
+    """
+    Represents the Histogram frame
+    """
+
+    def __init__(self, parent, location):
+        #initialize
+        super().__init__(parent)
+        self.pack(side = location, fill=tk.Y)   
+        self.configure(bg='#808080', width=400, relief="ridge")
+        
+    def red_histogram(self, image):
+        self.configure(padx=20, pady=20)
+        frequencies = image.get_color_channels()['red']
+
+        fig, ax = plt.subplots(figsize = (5, 3))
+        ax.hist(frequencies, bins=256)
+        
+        canvas = FigureCanvasTkAgg(fig, 
+                               master = self)
+        
+        canvas.get_tk_widget().pack()
 
 class MetaDataFrame (tk.Frame):
     """
@@ -194,7 +223,7 @@ class MetaDataFrame (tk.Frame):
         self.configure(bg='#808080', width=200, relief="ridge")
         # self.label = ttk.Label(self)
         # self.label.pack(padx=20,pady=20)
-
+        
 class MetaData (tk.Message):
     """
     the data retrieved from the Imported Image

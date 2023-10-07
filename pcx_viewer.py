@@ -269,4 +269,3 @@ class PcxImage:
         
         return disp_img
         
-PcxImage('scene.pcx').show_color_channel_images('blue').show()

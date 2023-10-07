@@ -316,6 +316,39 @@ class PcxImage:
 
         return disp_img
 
+    def get_black_and_white_image(self, threshold):
+        grayscale_image_data = self.get_grayscale_image('values')
+        bnw_image_data = list()
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+
+        for pixel in grayscale_image_data:
+            if pixel > threshold:
+                bnw_image_data.append(1)
+            else:
+                bnw_image_data.append(0)
+        
+        disp_img = Image.new('1', (width, height))
+        disp_img.putdata(bnw_image_data)
+
+        return disp_img
+    
+    def get_gamma_tranformed_image(self, gamma):
+        grayscale_image_data = self.get_grayscale_image('values')
+        gamma_image_data = list()
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+
+        for pixel in grayscale_image_data:
+            c = 1   # based on slides
+            gamma_image_data.append(c * (pixel ** gamma))
+        
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(gamma_image_data)
+
+        return disp_img
 
 
-PcxImage('scene.pcx').get_negative_image().show()
+PcxImage('scene1.pcx').get_gamma_tranformed_image(1.1).show()

@@ -16,6 +16,7 @@ import numpy as np
 from tkinter import * 
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
+import math
 
 class App(tk.Tk):
     """
@@ -34,7 +35,7 @@ class App(tk.Tk):
         # add widgets
         self.menu_bar = Menubar(self)
         self.main = Main(self)
-        
+        self.image = None
         # run the app
         self.mainloop()
         
@@ -43,23 +44,25 @@ class App(tk.Tk):
         file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
 
         if file.name.endswith('.pcx'):
-            image = PcxImage(file.name).get_image() # image data
+            self.image = PcxImage(file.name).get_image() # image data
             palette = PcxImage(file.name).get_image_palette(5)   # image color palette
             pcx_image = PcxImage(file.name) # to be used to retrieve metadata
-            self.main.palette_frame.display_palette(palette)
+            self.main.image_metadata.palette_frame.display_palette(palette)
             self.main.image_metadata.message.display_all(pcx_image)
-            self.main.histogram_frame.red_histogram(pcx_image)
+            
         else:
+            self.image = None
             image = Image.open(file.name)
             self.main.palette_frame.remove_palette()
             self.main.image_metadata.message.remove_display()
         
-        self.main.image_frame.display_image(image)
+        self.main.image_frame.display_image(self.image)
         
         
     def menu_close(self):
         self.main.image_frame.remove_image()
-        self.main.palette_frame.remove_palette()
+        self.main.channel_frame.remove_image()
+        self.main.image_metadata.palette_frame.remove_palette()
         self.main.image_metadata.message.remove_display()
 
 class Menubar(tk.Menu):
@@ -112,11 +115,11 @@ class Main(ttk.Frame):
 
         # initialize
         super().__init__(parent)
+
         # add widgets
-        self.histogram_frame = HistogramFrame(self, tk.LEFT)
         self.image_frame = ImageFrame(self)
+        self.channel_frame = ChannelFrame(self)
         self.image_metadata = MetaDataFrame(self, tk.RIGHT)
-        self.palette_frame = PaletteFrame(self)
         # self.grid(row=0,column=0,sticky="nwes")
         # self.grid_columnconfigure(0, weight=1)
         # self.grid_rowconfigure(0, weight=1)
@@ -152,7 +155,7 @@ class ImageFrame(tk.LabelFrame):
             new_img = image.resize((wsize, self.max_height))
 
         # put image in the img_container
-        self.configure(labelanchor='n', text="PCX IMAGE", font=('Helvetica Bold', 30))
+        self.configure(labelanchor='n', text="Original Image", font=('Helvetica Bold', 20))
         new_img = ImageTk.PhotoImage(new_img)
         self.label['image'] = new_img
         self.label.image = new_img
@@ -161,6 +164,46 @@ class ImageFrame(tk.LabelFrame):
         self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
         self.label['image'] = None
         self.label.image = None
+        
+class ChannelFrame(tk.LabelFrame):
+    """
+    Contains the channel image display area of the app
+    """
+
+    def __init__(self, parent):
+
+        # initialize
+        super().__init__(parent)
+        self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)
+        self.label = tk.Label(self)
+        self.label.pack()
+        self.max_width = 500
+        self.max_height = 240
+        self.configure(relief="flat")
+
+    def display_red_channel(self, image):
+
+        # resize image first to fit frame
+        if float(image.size[0])/float(image.size[1]) > self.max_width/self.max_height:
+            wpercent = self.max_width/float(image.size[0])
+            hsize = int((float(image.size[1])*float(wpercent)))
+            new_img = image.resize((self.max_width, hsize))
+        else:
+            hpercent = self.max_height/float(image.size[1])
+            wsize = int((float(image.size[0])*float(hpercent)))
+            new_img = image.resize((wsize, self.max_height))
+
+        # put image in the img_container
+        self.configure(labelanchor='n', text="Red Channel", font=('Helvetica Bold', 20))
+        new_img = ImageTk.PhotoImage(new_img)
+        self.label['image'] = new_img
+        self.label.image = new_img
+        
+    def remove_image(self):
+        self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
+        self.label['image'] = None
+        self.label.image = None
+
 
 class PaletteFrame(tk.LabelFrame):
     """
@@ -169,10 +212,10 @@ class PaletteFrame(tk.LabelFrame):
     def __init__(self, parent):
         #initialize
         super().__init__(parent)
-        self.pack(side = tk.RIGHT, expand=True,padx=10, pady=10)
+        self.pack(side = tk.BOTTOM, expand=True,padx=10, pady=10)
         self.label = tk.Label(self)
         self.label.pack()
-        self.configure(relief="flat")
+        self.configure(relief="flat", bg='#808080')
         
     
     #displays the color palette of the image
@@ -187,28 +230,6 @@ class PaletteFrame(tk.LabelFrame):
         self.label['image'] = None
         self.label.image = None
 
-class HistogramFrame (tk.Frame):
-    """
-    Represents the Histogram frame
-    """
-
-    def __init__(self, parent, location):
-        #initialize
-        super().__init__(parent)
-        self.pack(side = location, fill=tk.Y)   
-        self.configure(bg='#808080', width=400, relief="ridge")
-        
-    def red_histogram(self, image):
-        self.configure(padx=20, pady=20)
-        frequencies = image.get_color_channels()['red']
-
-        fig, ax = plt.subplots(figsize = (5, 3))
-        ax.hist(frequencies, bins=256)
-        
-        canvas = FigureCanvasTkAgg(fig, 
-                               master = self)
-        
-        canvas.get_tk_widget().pack()
 
 class MetaDataFrame (tk.Frame):
     """
@@ -218,22 +239,54 @@ class MetaDataFrame (tk.Frame):
     def __init__(self, parent, location):
         #initialize
         super().__init__(parent)
-        self.message = MetaData(self)
-        self.pack(side = location, fill=tk.Y)   
-        self.configure(bg='#808080', width=200, relief="ridge")
-        # self.label = ttk.Label(self)
-        # self.label.pack(padx=20,pady=20)
         
+        self.parent = parent
+        
+        
+        self.configure(bg='#808080', width=200, relief="flat")
+        
+        self.buttons_frame = Frame(self, highlightthickness=0)
+        self.buttons_frame.pack(side = TOP, padx=20, pady=20)
+        
+        self.red_button = Button(self.buttons_frame, text='RED', state=DISABLED)
+        self.red_button.pack(side=LEFT)
+        
+        self.green_button = Button(self.buttons_frame, text='GREEN', state=DISABLED)
+        self.green_button.pack(side=LEFT)
+        
+        self.blue_button = Button(self.buttons_frame, text='BLUE', state=DISABLED)
+        self.blue_button.pack(side=LEFT)
+        
+         # Create a frame for the message and pack it below the buttons
+        self.message_frame = Frame(self, bd=0, highlightthickness=0)
+        self.message_frame.pack(side=TOP, padx=20, pady=20)
+
+        # Create the message widget
+        self.message = MetaData(self.message_frame, red_button=self.red_button, blue_button=self.blue_button, green_button=self.green_button)
+        
+        # Create a frame for the palette_frame and pack it at the bottom
+        self.palette_frame_frame = Frame(self, highlightthickness=0)
+        self.palette_frame_frame.pack(side=TOP, padx=20, pady=20)
+
+        # Create the palette_frame
+        self.palette_frame = PaletteFrame(self.palette_frame_frame)
+
+        self.pack(side=location, fill=tk.Y)
+        
+
 class MetaData (tk.Message):
     """
     the data retrieved from the Imported Image
     """ 
 
-    def __init__(self, parent):
+    def __init__(self, parent, red_button, green_button, blue_button):
         #initialize
         super().__init__(parent)
-        self.configure(bg='#808080', text=".pcx Metadata goes here", width=200, font=('Helvetica Bold', 30))
-        self.pack(padx=10, pady=10, expand=True)
+        self.red_button = red_button
+        self.green_button = green_button
+        self.blue_button = blue_button
+        self.pack(side = tk.BOTTOM, expand=True,padx=10, pady=10)
+        
         
     def display_all(self, image:PcxImage):
         header = "IMAGE METADATA:\n"
@@ -250,13 +303,18 @@ Number of Color Planes: {image.get_n_planes()}
 Bytes per Line: {image.get_bytes_per_line()}
 Palette Information: {image.get_palette_info()}
 Horizontal Screen Size: {image.get_h_screen_size()}
-Vertical Screen Size: {image.get_v_screen_size()}
-                    """
+Vertical Screen Size: {image.get_v_screen_size()}"""
 
+        self.red_button.config(state=tk.NORMAL)
+        self.green_button.config(state=tk.NORMAL)
+        self.blue_button.config(state=tk.NORMAL)
         self.configure(bg='#808080', text= header + all_data, font=('Helvetica', 12))
-    
-    def remove_display(self):
-        self.configure(bg='#808080', text=".pcx Metadata goes here", width=200, font=('Helvetica Bold', 30))
         
+    def remove_display(self):
+        
+        self.configure(bg='#808080', text="Open an Image", width=200, font=('Helvetica Bold', 30))
+        self.red_button.config(state=tk.DISABLED)
+        self.green_button.config(state=tk.DISABLED)
+        self.blue_button.config(state=tk.DISABLED)
 
 App("IVP App", "1280x720", True)

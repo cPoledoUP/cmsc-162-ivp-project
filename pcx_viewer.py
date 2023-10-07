@@ -227,6 +227,8 @@ class PcxImage:
 
         return disp_img
 
+    ########## Project 1 Guide 3 ##########
+
     def get_color_channels(self):
         red = []
         green = []
@@ -268,5 +270,52 @@ class PcxImage:
                 disp_img.putpixel((x, y), color_data[y * width + x])
         
         return disp_img
+    
+    ########## Project 1 Guide 4 ##########
+
+    def get_grayscale_image(self, mode = 'image'):
+        # mode must be either 'image' or 'values'
+        # if image -> returns a displayable image
+        # if values -> returns an array of pixel values
         
-PcxImage('scene.pcx').show_color_channel_images('blue').show()
+        palette = self.get_palette_data()
+        image_data = self.get_image_data()
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+
+        grayscale_image_data = list()
+
+        # get average of values to create new pixel data
+        for y in range(height):
+            for x in range(width):
+                rgb_values = palette[image_data[y][x]]
+                grayscale_image_data.append(int((rgb_values[0] + rgb_values[1] + rgb_values[2]) / 3))
+        
+        if mode == 'values':
+            return grayscale_image_data
+        elif mode == 'image':
+            disp_img = Image.new('L', (width, height))
+            disp_img.putdata(grayscale_image_data)
+            return disp_img
+        else:
+            return -1
+    
+    def get_negative_image(self):
+        grayscale_image_data = self.get_grayscale_image('values')
+        negative_image_data = list()
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+
+        for pixel in grayscale_image_data:
+            negative_image_data.append(255 - pixel)
+        
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(negative_image_data)
+
+        return disp_img
+
+
+
+PcxImage('scene.pcx').get_negative_image().show()

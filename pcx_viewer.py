@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw
 
 class PcxImage:
 
-    def __init__(self, location):
+    def __init__(self, location: str) -> None:
         pcx_file = open(location, mode='br')
         
         self.location = location.split('/')[-1]
@@ -25,14 +25,32 @@ class PcxImage:
         
         pcx_file.close()
     
-    def get_manufacturer(self):
+    def get_manufacturer(self) -> str:
+        """
+        Returns the manufacturer of the pcx file
+
+        Returns
+        -------
+        str
+            mostly 'Zshoft .pcx (10)'
+        """
+
         match self.manufacturer[0]:
             case 10:
                 return 'Zshoft .pcx (10)'
             case _:
                 return 'Unknown manufacturer'
     
-    def get_version(self):
+    def get_version(self) -> int:
+        """
+        Returns the version number of the pcx file
+
+        Returns
+        -------
+        int
+            version number
+        """
+
         return self.version[0]
         # match self.version[0]:
         #     case 0:
@@ -48,7 +66,16 @@ class PcxImage:
         #     case _:
         #         return 'Unknown version'
     
-    def get_encoding(self):
+    def get_encoding(self) -> int:
+        """
+        Returns the encoding of the pcx file
+
+        Returns
+        -------
+        int
+            encoding
+        """
+
         return self.encoding[0]
         # match self.encoding[0]:
         #     case 0:
@@ -58,10 +85,28 @@ class PcxImage:
         #     case _:
         #         return 'Unknown encoding'
     
-    def get_bits_per_pixel(self):
+    def get_bits_per_pixel(self) -> int:
+        """
+        Returns the bits per pixel of the pcx file
+
+        Returns
+        -------
+        int
+            bits per pixel
+        """
+        
         return self.bits_per_pixel[0]
     
-    def get_window(self):
+    def get_window(self) -> list:
+        """
+        Returns the window of the pcx file
+
+        Returns
+        -------
+        list
+            [x_min, y_min, x_max, y_max]
+        """
+        
         first_val = 0
         values = list()
         for i, byte in enumerate(self.window):
@@ -73,15 +118,42 @@ class PcxImage:
                 
         return values
 
-    def get_hdpi(self):
+    def get_hdpi(self) -> int:
+        """
+        Returns the hdpi of the pcx file
+
+        Returns
+        -------
+        int
+            hdpi
+        """
+        
         left_side = self.hdpi[1] << 8
         return left_side + self.hdpi[0]
 
-    def get_vdpi(self):
+    def get_vdpi(self) -> int:
+        """
+        Returns the vdpi of the pcx file
+
+        Returns
+        -------
+        int
+            vdpi
+        """
+        
         left_side = self.vdpi[1] << 8
         return left_side + self.vdpi[0]
     
-    def get_color_map(self):
+    def get_color_map(self) -> list:
+        """
+        Returns the header palette of the pcx file
+
+        Returns
+        -------
+        list
+            [(r, g, b), (r, g, b), ...]
+        """
+        
         palette = list()
         rgb = list()
         for i, byte in enumerate(self.color_map):
@@ -91,17 +163,53 @@ class PcxImage:
                 rgb = list()
         return palette
 
-    def get_reserved(self):
+    def get_reserved(self) -> int:
+        """
+        Returns the reserved bits of the pcx file
+
+        Returns
+        -------
+        int
+            should be 0
+        """
+        
         return self.reserved[0]
     
-    def get_n_planes(self):
+    def get_n_planes(self) -> int:
+        """
+        Returns the number of planes of the pcx file
+
+        Returns
+        -------
+        int
+            number of planes
+        """
+        
         return self.n_planes[0]
     
-    def get_bytes_per_line(self):
+    def get_bytes_per_line(self) -> int:
+        """
+        Returns the bytes per line of the pcx file
+
+        Returns
+        -------
+        int
+            bytes per line
+        """
+        
         left_side = self.bytes_per_line[1] << 8
         return left_side + self.bytes_per_line[0]
     
-    def get_palette_info(self):
+    def get_palette_info(self) -> int:
+        """
+        Returns the palette info of the pcx file
+
+        Returns
+        -------
+        int
+            palette info
+        """
+        
         left_side = self.palette_info[1] << 8
         return left_side + self.palette_info[0]
         # match left_side + self.palette_info[0]:
@@ -112,18 +220,54 @@ class PcxImage:
         #     case _:
         #         return 'Unknown palette info'
             
-    def get_h_screen_size(self):
+    def get_h_screen_size(self) -> int:
+        """
+        Returns the horizontal screen size of the pcx file
+
+        Returns
+        -------
+        int
+            horizontal screen size
+        """
+        
         left_side = self.h_screen_size[1] << 8
         return left_side + self.h_screen_size[0]
     
-    def get_v_screen_size(self):
+    def get_v_screen_size(self) -> int:
+        """
+        Returns the vertical screen size of the pcx file
+
+        Returns
+        -------
+        int
+            vertical screen size
+        """
+        
         left_side = self.v_screen_size[1] << 8
         return left_side + self.v_screen_size[0]
     
-    def get_filler(self):
+    def get_filler(self) -> bytes:
+        """
+        Returns the filler bytes of the pcx file
+
+        Returns
+        -------
+        bytes
+            filler bytes, should be 0
+        """
+        
         return self.filler
 
-    def get_palette_data(self):
+    def get_palette_data(self) -> list:
+        """
+        Returns the pallete at the end of the pcx file
+
+        Returns
+        -------
+        list
+            [(r, g, b), (r, g, b), ...]
+        """
+        
         palette_bytes = list()
         palette = list()
         if self.get_version() == 5 and self.image_buffer[-769] == 12:
@@ -138,7 +282,21 @@ class PcxImage:
   
         return palette
     
-    def get_image_palette(self, pixel_length):
+    def get_image_palette(self, pixel_length: int) -> Image:
+        """
+        Returns the image palette of the pcx file as displayable image
+
+        Parameters
+        ----------
+        pixel_length : int
+            pixel dimension of a single color in the palette
+
+        Returns
+        -------
+        Image
+            image of eof palette
+        """
+        
         rgb_values = self.get_palette_data()
          
         target_size = 16
@@ -156,7 +314,16 @@ class PcxImage:
                       
         return image
     
-    def get_image_data(self):
+    def get_image_data(self) -> list:
+        """
+        Returns the image data of the pcx file
+
+        Returns
+        -------
+        list
+            list of palette index per pixel if using eof palette
+        """
+        
         # https://people.sc.fsu.edu/~jburkardt/txt/pcx_format.txt
 
         dimensions = self.get_window()
@@ -196,7 +363,21 @@ class PcxImage:
         
         return image_data
     
-    def get_image(self):
+    def get_image(self) -> Image:
+        """
+        Returns pcx image as a displayable image
+
+        Raises
+        ------
+        Exception
+            if pcx file is not using or does not have a palette at eof
+
+        Returns
+        -------
+        Image
+            displayable pcx image
+        """
+        
         palette = self.get_palette_data()
         img_data = self.get_image_data()
         dimensions = self.get_window()
@@ -209,27 +390,38 @@ class PcxImage:
             for y, list in enumerate(img_data):
                 for x, pix in enumerate(list):
                     disp_img.putpixel((x, y), palette[pix])
-        elif self.get_bits_per_pixel() == 1 and self.get_n_planes() == 1:   # monochrome
-            for y, list in enumerate(img_data):
-                for x, pix in enumerate(list):
-                    for i, bit in enumerate(bin(pix)[2:]):  # 1 bit per pixel, pix is 8 bits (1 byte)
-                        color = int(bit) * 255
-                        disp_img.putpixel((x * 8 + i, y), (color, color, color))
-        elif self.get_bits_per_pixel() == 8 and self.get_n_planes() == 3:   # not using palette (16.7 mil color)
-            for y, list in enumerate(img_data):
-                row_len = len(list)
-                color_size = int(row_len / 3)
-                r = list[:color_size]
-                g = list[color_size: color_size*2]
-                b = list[color_size*2: color_size*3]
-                for x in range(color_size):
-                    disp_img.putpixel((x, y), (r[x], g[x], b[x]))
+        else:
+            raise Exception('Unsupported pcx file: not using palette at eof')
+        # elif self.get_bits_per_pixel() == 1 and self.get_n_planes() == 1:   # monochrome
+        #     for y, list in enumerate(img_data):
+        #         for x, pix in enumerate(list):
+        #             for i, bit in enumerate(bin(pix)[2:]):  # 1 bit per pixel, pix is 8 bits (1 byte)
+        #                 color = int(bit) * 255
+        #                 disp_img.putpixel((x * 8 + i, y), (color, color, color))
+        # elif self.get_bits_per_pixel() == 8 and self.get_n_planes() == 3:   # not using palette (16.7 mil color)
+        #     for y, list in enumerate(img_data):
+        #         row_len = len(list)
+        #         color_size = int(row_len / 3)
+        #         r = list[:color_size]
+        #         g = list[color_size: color_size*2]
+        #         b = list[color_size*2: color_size*3]
+        #         for x in range(color_size):
+        #             disp_img.putpixel((x, y), (r[x], g[x], b[x]))
 
         return disp_img
 
     ########## Project 1 Guide 3 ##########
 
-    def get_color_channels(self):
+    def get_color_channels(self) -> dict:
+        """
+        Returns the color channels of the eof palette
+
+        Returns
+        -------
+        dict
+            {'red': list, 'green': list, 'blue': list}
+        """
+        
         red = []
         green = []
         blue = []
@@ -249,7 +441,20 @@ class PcxImage:
             'blue': blue
         }
     
-    def show_color_channel_images(self, color):
+    def show_color_channel_images(self, color: str) -> Image:
+        """
+        Returns a color channel of the pcx image as displayable image
+
+        Parameters
+        ----------
+        color : str
+            'red', 'green', 'blue'
+
+        Returns
+        -------
+        Image
+            pcx image using only one color channel
+        """
         color_data = self.get_color_channels()[color]
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1

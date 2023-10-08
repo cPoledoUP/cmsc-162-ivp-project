@@ -205,13 +205,15 @@ class OutputFrame(tk.LabelFrame):
         self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)
         self.label = tk.Label(self)
         self.label.pack()
+        self.canvas = None
         self.max_width = 500
         self.max_height = 240
         self.configure(relief="flat")
 
     def display_channel(self, pcx_image, color: str):
         image = pcx_image.show_color_channel_images(color)
-
+        color_frequency = pcx_image.get_color_channels()[color]
+        
         # resize image first to fit frame
         if float(image.size[0])/float(image.size[1]) > self.max_width/self.max_height:
             wpercent = self.max_width/float(image.size[0])
@@ -228,19 +230,24 @@ class OutputFrame(tk.LabelFrame):
         self.label['image'] = new_img
         self.label.image = new_img
 
-        # display histogram
-        # code
-        # here
+        # remove existing histogram
+        if self.canvas != None:
+            self.canvas.get_tk_widget().pack_forget()
+            
+        # histogram for the color channel        
+        fig, ax = plt.subplots(figsize = (5, 3))
+        ax.hist(color_frequency, bins=256)
+
+        self.canvas = FigureCanvasTkAgg(fig, 
+                               master = self)
+        self.canvas.get_tk_widget().pack(padx=20, pady=20)
         
     def remove_image(self):
         self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
         self.label['image'] = None
         self.label.image = None
-
-        # remove histogram
-        # code
-        # here
-
+        if self.canvas != None:
+            self.canvas.get_tk_widget().pack_forget()
 
 class MetaDataFrame (tk.Frame):
     """

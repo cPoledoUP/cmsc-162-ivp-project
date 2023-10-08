@@ -478,10 +478,20 @@ class PcxImage:
     
     ########## Project 1 Guide 4 ##########
 
-    def get_grayscale_image(self, mode = 'image'):
-        # mode must be either 'image' or 'values'
-        # if image -> returns a displayable image
-        # if values -> returns an array of pixel values
+    def get_grayscale_image(self, mode : str = 'image'):
+        """
+        Returns a grayscale transformed version of the pcx image as a list or displayable image
+
+        Parameters
+        ----------
+        mode : str
+            'image', 'values'
+
+        Returns
+        -------
+        list | Image
+            a list of grayscale pixel values or a grayscale image
+        """
         
         palette = self.get_palette_data()
         image_data = self.get_image_data()
@@ -506,7 +516,16 @@ class PcxImage:
         else:
             return -1
     
-    def get_negative_image(self):
+    def get_negative_image(self) -> Image:
+        """
+        Returns a negative transformed version of the pcx image as a displayable image
+
+        Returns
+        -------
+        Image
+            a negative transformed pcx image
+        """
+
         grayscale_image_data = self.get_grayscale_image('values')
         negative_image_data = list()
         dimensions = self.get_window()
@@ -521,7 +540,21 @@ class PcxImage:
 
         return disp_img
 
-    def get_black_and_white_image(self, threshold):
+    def get_black_and_white_image(self, threshold: int) -> Image:
+        """
+        Returns a black and white transformed version of the pcx image as a displayable image
+
+        Parameters
+        ----------
+        threshold : int
+            range of [0, 255], threshold to determine white and black pixels
+
+        Returns
+        -------
+        Image
+            a black and white transformed pcx image
+        """
+
         grayscale_image_data = self.get_grayscale_image('values')
         bnw_image_data = list()
         dimensions = self.get_window()
@@ -539,7 +572,21 @@ class PcxImage:
 
         return disp_img
     
-    def get_gamma_tranformed_image(self, gamma):
+    def get_gamma_tranformed_image(self, gamma: float) -> Image:
+        """
+        Returns a black and white transformed version of the pcx image as a displayable image
+
+        Parameters
+        ----------
+        gamma : float
+            a positive floating point value for gamma transform
+
+        Returns
+        -------
+        Image
+            a gamma transformed pcx image
+        """
+
         grayscale_image_data = self.get_grayscale_image('values')
         gamma_image_data = list()
         dimensions = self.get_window()
@@ -556,4 +603,4 @@ class PcxImage:
         return disp_img
 
 
-PcxImage('scene1.pcx').get_gamma_tranformed_image(1.1).show()
+PcxImage('scene1.pcx').get_gamma_tranformed_image(0.9).show()

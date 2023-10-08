@@ -22,7 +22,7 @@ class App(tk.Tk):
     """
     Represents the app
     """
-
+    
     def __init__(self, title, size, start_zoomed):
 
         # initialize
@@ -35,20 +35,21 @@ class App(tk.Tk):
         # add widgets
         self.menu_bar = Menubar(self)
         self.main = Main(self)
-        self.image = None
         # run the app
         self.mainloop()
         
     def menu_open(self):
         ftypes = [('pcx file', ['*.pcx']), ('image files', ['*.jpg', '*.png', '*.tiff', '*.ppm', '*.gif', '*.bmp'])]
         file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
-
+        
         if file.name.endswith('.pcx'):
+            self.pcx_image = PcxImage(file.name)
             self.image = PcxImage(file.name).get_image() # image data
             palette = PcxImage(file.name).get_image_palette(5)   # image color palette
             pcx_image = PcxImage(file.name) # to be used to retrieve metadata
             self.main.image_metadata.palette_frame.display_palette(palette)
             self.main.image_metadata.message.display_all(pcx_image)
+            self.main.image_metadata.store_pcx_image(self.pcx_image)
             
         else:
             self.image = None
@@ -115,7 +116,6 @@ class Main(ttk.Frame):
 
         # initialize
         super().__init__(parent)
-
         # add widgets
         self.image_frame = ImageFrame(self)
         self.channel_frame = ChannelFrame(self)
@@ -174,6 +174,7 @@ class ChannelFrame(tk.LabelFrame):
 
         # initialize
         super().__init__(parent)
+        
         self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)
         self.label = tk.Label(self)
         self.label.pack()
@@ -239,16 +240,13 @@ class MetaDataFrame (tk.Frame):
     def __init__(self, parent, location):
         #initialize
         super().__init__(parent)
-        
-        self.parent = parent
-        
-        
+        self.image = PcxImage
         self.configure(bg='#808080', width=200, relief="flat")
         
         self.buttons_frame = Frame(self, highlightthickness=0)
         self.buttons_frame.pack(side = TOP, padx=20, pady=20)
         
-        self.red_button = Button(self.buttons_frame, text='RED', state=DISABLED)
+        self.red_button = Button(self.buttons_frame, text='RED', state=DISABLED, command = lambda: parent.channel_frame.display_red_channel(self.image.show_color_channel_images('red')))
         self.red_button.pack(side=LEFT)
         
         self.green_button = Button(self.buttons_frame, text='GREEN', state=DISABLED)
@@ -273,7 +271,9 @@ class MetaDataFrame (tk.Frame):
 
         self.pack(side=location, fill=tk.Y)
         
-
+    def store_pcx_image(self, pcx_image):
+        self.image = pcx_image
+    
 class MetaData (tk.Message):
     """
     the data retrieved from the Imported Image

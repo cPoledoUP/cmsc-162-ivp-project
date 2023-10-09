@@ -89,7 +89,8 @@ class App(tk.Tk):
         self.main.image_metadata.palette_frame.remove_palette()
         self.main.image_metadata.message.remove_display()
         self.main.image_metadata.tool_bar.disable_toolbar()
-
+        self.main.image_metadata.tool_bar.disable_slider()
+        
 class Menubar(tk.Menu):
     """
     Represents the top menu bar used in the app
@@ -287,7 +288,30 @@ class OutputFrame(tk.LabelFrame):
         new_img = ImageTk.PhotoImage(new_img)
         self.label['image'] = new_img
         self.label.image = new_img
-            
+    
+    def display_bnw_image(self, pcx_image, threshold):
+        # remove existing image in frame first
+        self.remove_image()    
+        
+        bnw_image = pcx_image.get_black_and_white_image(threshold)
+        
+        # display the black and white image 
+        # resize image first to fit frame
+        if float(bnw_image.size[0])/float(bnw_image.size[1]) > self.max_width/self.max_height:
+            wpercent = self.max_width/float(bnw_image.size[0])
+            hsize = int((float(bnw_image.size[1])*float(wpercent)))
+            new_img = bnw_image.resize((self.max_width, hsize))
+        else:
+            hpercent = self.max_height/float(bnw_image.size[1])
+            wsize = int((float(bnw_image.size[0])*float(hpercent)))
+            new_img = bnw_image.resize((wsize, self.max_height))
+
+        # put image in the img_container
+        self.configure(labelanchor='n', text="Black and White Image", font=('Helvetica Bold', 20))
+        new_img = ImageTk.PhotoImage(new_img)
+        self.label['image'] = new_img
+        self.label.image = new_img
+    
     def remove_image(self):
         self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
         self.label['image'] = None
@@ -304,14 +328,12 @@ class MetaDataFrame (tk.Frame):
         #initialize
         super().__init__(parent, bg='#B0B0B0', width=250)
         self.parent = parent
-        
-        self.metadata_scrollbar = ttk.Scrollbar(self, orient="vertical")
-        self.metadata_scrollbar.pack(side="left", fill="y")
         self.tool_bar = ToolBar(self)
         sep = ttk.Separator(self, orient='horizontal')
         sep.pack(fill='x')
         
-         # Create a frame for the message and pack it below the buttons
+        
+        # Create a frame for the message and pack it below the buttons
         # self.message_frame = tk.Frame(self, bd=0, highlightthickness=0)
         # self.message_frame.pack(side=tk.TOP, padx=20, pady=20)
 
@@ -326,7 +348,7 @@ class MetaDataFrame (tk.Frame):
         self.palette_frame = PaletteFrame(self)
 
         self.pack(side=tk.RIGHT, fill=tk.Y)
-        self.pack_propagate(False) # disable resizing
+        # self.pack_propagate(False) # disable resizing
 
 class ToolBar(tk.Frame):
     """
@@ -351,29 +373,82 @@ class ToolBar(tk.Frame):
         self.blue_button.grid(row=0, column=2, padx=2)
 
         self.grey_scale_button = tk.Button(self, text='GREY',width=5, height= 1)
-        self.grey_scale_button.grid(row=1, column=0, padx=2, pady=2)
+        self.grey_scale_button.grid(row=1, column=0, padx=2, pady=(2,10))
         
         self.negative_button = tk.Button(self, text='NEG',width=5, height= 1)
-        self.negative_button.grid(row=1, column=1, padx=2, pady=2)
+        self.negative_button.grid(row=1, column=1, padx=2, pady=(2,10))
+        
+        self.bw_button = tk.Button(self, text='B/W',width=5, height= 1)
+        self.bw_button.grid(row=1, column=2, padx=2, pady=(2,10))
+        
+        self.bw_threshold_frame = tk.LabelFrame(self, text="B/W Threshold", bg='#fefefe', padx=20, pady=20)
+        self.bw_threshold_frame.grid(row=2, columnspan=3)
         
         self.config(relief='flat', bg='#B0B0B0')
+        
+        """
+        
+        BLACK & WHITE SLIDER
+        
+        """
+        
+        self.current_value = tk.IntVar()
+        
+        #create slider
+        self.bw_slider = ttk.Scale(
+            self.bw_threshold_frame,
+            from_= 0,
+            to=255,
+            orient='horizontal',
+            variable= self.current_value
+        )
+        
+        #set default to mid
+        self.bw_slider.set(127)
+        self.bw_slider.pack()
+        
+        #current value of the slider
+        self.value = tk.Label(self.bw_threshold_frame, bg='#fefefe')
+        self.value.pack(side="bottom")
+        
+        #current value LABEL of the slider
+        self.value_label = tk.Label(self.bw_threshold_frame, text="Value:", padx=20, pady=5, bg='#fefefe')
+        self.value_label.pack(side="bottom")
+        
         # start disabled
         self.disable_toolbar()
+        self.disable_slider()
         
+    def get_scale_value(self):
+        return '{: }'.format(self.current_value.get())
+    
+    def slider_changed(self, event, pcx_image):
+        self.value.configure(text= self.get_scale_value())
+        self.parent.parent.output_frame.display_bnw_image(pcx_image, self.bw_slider.get())
+        
+    def enable_slider(self, pcx_image):
+        self.bw_slider['state'] = 'normal'
+        self.bw_slider['command'] = lambda: self.slider_changed(pcx_image)
+
     def enable_toolbar(self, pcx_image):
         self.red_button.configure(command=lambda: self.parent.parent.output_frame.display_channel(pcx_image, 'red'), state=tk.NORMAL)
         self.green_button.configure(command=lambda: self.parent.parent.output_frame.display_channel(pcx_image, 'green'), state=tk.NORMAL)
         self.blue_button.configure(command=lambda: self.parent.parent.output_frame.display_channel(pcx_image, 'blue'), state=tk.NORMAL)
         self.grey_scale_button.configure(command=lambda: self.parent.parent.output_frame.display_grayscale_image(pcx_image), state=tk.NORMAL)
         self.negative_button.configure(command=lambda: self.parent.parent.output_frame.display_negative_image(pcx_image),state=tk.NORMAL)
+        self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_bnw_image(pcx_image, self.bw_slider.get()), self.enable_slider(pcx_image)] ,state=tk.NORMAL)
         
+    def disable_slider(self):
+        self.bw_slider['state'] = 'disabled'
+    
     def disable_toolbar(self):
         self.red_button.config(state=tk.DISABLED)
         self.green_button.config(state=tk.DISABLED)
         self.blue_button.config(state=tk.DISABLED)
         self.grey_scale_button.config(state=tk.DISABLED)
         self.negative_button.config(state=tk.DISABLED)
-        
+        self.bw_button.config(state=tk.DISABLED)
+
 class MetaData (tk.Message):
     """
     the data retrieved from the Imported Image
@@ -387,7 +462,7 @@ class MetaData (tk.Message):
         self.remove_display()
         
     def display_all(self, image:PcxImage):
-        header = "IMAGE METADATA:\n\n"
+        header = "IMAGE METADATA:\n"
         all_data = (
             f"File Name: {image.location}\n"
             f"Manufacturer: {image.get_manufacturer()}\n"
@@ -401,12 +476,12 @@ class MetaData (tk.Message):
             f"Bytes per Line: {image.get_bytes_per_line()}\n"
             f"Palette Information: {image.get_palette_info()}\n"
             f"Horizontal Screen Size: {image.get_h_screen_size()}\n"
-            f"Vertical Screen Size: {image.get_v_screen_size()}\n"
+            f"Vertical Screen Size: {image.get_v_screen_size()}"
         )
                     
-        self.configure(bg='#B0B0B0', text= header + all_data, font=('Helvetica', 12), width=200)
+        self.configure(bg='#B0B0B0', text= header + all_data, font=('Helvetica', 10), width=200)
         self.separator.pack(side= tk.BOTTOM, fill='x')
-        self.pack(side = tk.BOTTOM, expand=True,padx=10, pady=10)
+        self.pack(side = tk.BOTTOM, expand=True)
         
     def remove_display(self): 
         self.separator.pack_forget()
@@ -427,7 +502,7 @@ class PaletteFrame(tk.LabelFrame):
     
     #displays the color palette of the image
     def display_palette(self, image):
-        self.configure(labelanchor='n', text="COLOR PALETTE", font=('Helvetica Bold', 15))
+        self.configure(labelanchor='n', text="COLOR PALETTE", font=('Helvetica Bold', 10))
         image = ImageTk.PhotoImage(image)
         self.label['image'] = image
         self.label.image = image
@@ -435,7 +510,7 @@ class PaletteFrame(tk.LabelFrame):
 
     def remove_palette(self):
         self.label.pack_forget()
-        self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
+        self.configure(labelanchor='n', text="", font=('Helvetica Bold', 10))
         self.label['image'] = None
         self.label.image = None
 

@@ -563,11 +563,11 @@ class PcxImage:
 
         for pixel in grayscale_image_data:
             if pixel > threshold:
-                bnw_image_data.append(1)
+                bnw_image_data.append(255)
             else:
                 bnw_image_data.append(0)
         
-        disp_img = Image.new('1', (width, height))
+        disp_img = Image.new('L', (width, height))
         disp_img.putdata(bnw_image_data)
 
         return disp_img
@@ -603,4 +603,4 @@ class PcxImage:
         return disp_img
 
 
-PcxImage('scene1.pcx').get_gamma_tranformed_image(0.9).show()
+# PcxImage('scene1.pcx').get_black_and_white_image(255).show()

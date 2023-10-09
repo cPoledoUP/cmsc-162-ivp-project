@@ -400,6 +400,7 @@ class ToolBar(tk.Frame):
             from_= 0,
             to=255,
             orient='horizontal',
+            command=self.slider_changed,
             variable= self.current_value
         )
         
@@ -422,13 +423,12 @@ class ToolBar(tk.Frame):
     def get_scale_value(self):
         return '{: }'.format(self.current_value.get())
     
-    def slider_changed(self, event, pcx_image):
+    def slider_changed(self, event):
         self.value.configure(text= self.get_scale_value())
-        self.parent.parent.output_frame.display_bnw_image(pcx_image, self.bw_slider.get())
+        self.bw_button.invoke()
         
-    def enable_slider(self, pcx_image):
+    def enable_slider(self):
         self.bw_slider['state'] = 'normal'
-        self.bw_slider['command'] = lambda: self.slider_changed(pcx_image)
 
     def enable_toolbar(self, pcx_image):
         self.red_button.configure(command=lambda: self.parent.parent.output_frame.display_channel(pcx_image, 'red'), state=tk.NORMAL)
@@ -436,7 +436,7 @@ class ToolBar(tk.Frame):
         self.blue_button.configure(command=lambda: self.parent.parent.output_frame.display_channel(pcx_image, 'blue'), state=tk.NORMAL)
         self.grey_scale_button.configure(command=lambda: self.parent.parent.output_frame.display_grayscale_image(pcx_image), state=tk.NORMAL)
         self.negative_button.configure(command=lambda: self.parent.parent.output_frame.display_negative_image(pcx_image),state=tk.NORMAL)
-        self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_bnw_image(pcx_image, self.bw_slider.get()), self.enable_slider(pcx_image)] ,state=tk.NORMAL)
+        self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_bnw_image(pcx_image, self.bw_slider.get()), self.enable_slider()] ,state=tk.NORMAL)
         
     def disable_slider(self):
         self.bw_slider['state'] = 'disabled'

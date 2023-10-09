@@ -186,7 +186,7 @@ class ImageFrame(tk.LabelFrame):
         new_img = ImageTk.PhotoImage(new_img)
         self.label['image'] = new_img
         self.label.image = new_img
-
+        
     def remove_image(self):
         self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
         self.label['image'] = None
@@ -242,6 +242,52 @@ class OutputFrame(tk.LabelFrame):
                                master = self)
         self.canvas.get_tk_widget().pack(padx=20, pady=20)
         
+    def display_negative_image(self, pcx_image):
+        # remove existing image in frame first
+        self.remove_image()
+        
+        negative_image = pcx_image.get_negative_image()
+        
+        # display the negative image 
+        # resize image first to fit frame
+        if float(negative_image.size[0])/float(negative_image.size[1]) > self.max_width/self.max_height:
+            wpercent = self.max_width/float(negative_image.size[0])
+            hsize = int((float(negative_image.size[1])*float(wpercent)))
+            new_img = negative_image.resize((self.max_width, hsize))
+        else:
+            hpercent = self.max_height/float(negative_image.size[1])
+            wsize = int((float(negative_image.size[0])*float(hpercent)))
+            new_img = negative_image.resize((wsize, self.max_height))
+
+        # put image in the img_container
+        self.configure(labelanchor='n', text="Negative Image", font=('Helvetica Bold', 20))
+        new_img = ImageTk.PhotoImage(new_img)
+        self.label['image'] = new_img
+        self.label.image = new_img
+        
+    def display_grayscale_image (self, pcx_image):
+        # remove existing image in frame first
+        self.remove_image()    
+        
+        grey_image = pcx_image.get_grayscale_image('image')
+        
+        # display the negative image 
+        # resize image first to fit frame
+        if float(grey_image.size[0])/float(grey_image.size[1]) > self.max_width/self.max_height:
+            wpercent = self.max_width/float(grey_image.size[0])
+            hsize = int((float(grey_image.size[1])*float(wpercent)))
+            new_img = grey_image.resize((self.max_width, hsize))
+        else:
+            hpercent = self.max_height/float(grey_image.size[1])
+            wsize = int((float(grey_image.size[0])*float(hpercent)))
+            new_img = grey_image.resize((wsize, self.max_height))
+
+        # put image in the img_container
+        self.configure(labelanchor='n', text="Grayscale Image", font=('Helvetica Bold', 20))
+        new_img = ImageTk.PhotoImage(new_img)
+        self.label['image'] = new_img
+        self.label.image = new_img
+            
     def remove_image(self):
         self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
         self.label['image'] = None
@@ -259,6 +305,8 @@ class MetaDataFrame (tk.Frame):
         super().__init__(parent, bg='#B0B0B0', width=250)
         self.parent = parent
         
+        self.metadata_scrollbar = ttk.Scrollbar(self, orient="vertical")
+        self.metadata_scrollbar.pack(side="left", fill="y")
         self.tool_bar = ToolBar(self)
         sep = ttk.Separator(self, orient='horizontal')
         sep.pack(fill='x')
@@ -293,15 +341,22 @@ class ToolBar(tk.Frame):
         self.pack(side = tk.TOP, padx=20, pady=20)
 
         # buttons
-        self.red_button = tk.Button(self, text='RED')
-        self.red_button.pack(side=tk.LEFT)
+        self.red_button = tk.Button(self, text='RED',width=5, height= 1)
+        self.red_button.grid(row=0, column=0, padx=2)
         
-        self.green_button = tk.Button(self, text='GREEN')
-        self.green_button.pack(side=tk.LEFT)
+        self.green_button = tk.Button(self, text='GREEN',width=5, height= 1)
+        self.green_button.grid(row=0, column=1, padx=2)
         
-        self.blue_button = tk.Button(self, text='BLUE')
-        self.blue_button.pack(side=tk.LEFT)
+        self.blue_button = tk.Button(self, text='BLUE',width=5, height= 1)
+        self.blue_button.grid(row=0, column=2, padx=2)
 
+        self.grey_scale_button = tk.Button(self, text='GREY',width=5, height= 1)
+        self.grey_scale_button.grid(row=1, column=0, padx=2, pady=2)
+        
+        self.negative_button = tk.Button(self, text='NEG',width=5, height= 1)
+        self.negative_button.grid(row=1, column=1, padx=2, pady=2)
+        
+        self.config(relief='flat', bg='#B0B0B0')
         # start disabled
         self.disable_toolbar()
         
@@ -309,12 +364,16 @@ class ToolBar(tk.Frame):
         self.red_button.configure(command=lambda: self.parent.parent.output_frame.display_channel(pcx_image, 'red'), state=tk.NORMAL)
         self.green_button.configure(command=lambda: self.parent.parent.output_frame.display_channel(pcx_image, 'green'), state=tk.NORMAL)
         self.blue_button.configure(command=lambda: self.parent.parent.output_frame.display_channel(pcx_image, 'blue'), state=tk.NORMAL)
-    
+        self.grey_scale_button.configure(command=lambda: self.parent.parent.output_frame.display_grayscale_image(pcx_image), state=tk.NORMAL)
+        self.negative_button.configure(command=lambda: self.parent.parent.output_frame.display_negative_image(pcx_image),state=tk.NORMAL)
+        
     def disable_toolbar(self):
         self.red_button.config(state=tk.DISABLED)
         self.green_button.config(state=tk.DISABLED)
         self.blue_button.config(state=tk.DISABLED)
-    
+        self.grey_scale_button.config(state=tk.DISABLED)
+        self.negative_button.config(state=tk.DISABLED)
+        
 class MetaData (tk.Message):
     """
     the data retrieved from the Imported Image

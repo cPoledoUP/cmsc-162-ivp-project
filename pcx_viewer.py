@@ -572,7 +572,7 @@ class PcxImage:
 
         return disp_img
     
-    def get_gamma_tranformed_image(self, gamma: float) -> Image:
+    def get_gamma_transformed_image(self, gamma: float) -> Image:
         """
         Returns a black and white transformed version of the pcx image as a displayable image
 
@@ -603,4 +603,5 @@ class PcxImage:
         return disp_img
 
 
-PcxImage('scene1.pcx').get_gamma_tranformed_image(0.9).show()
+# PcxImage('scene1.pcx').get_gamma_transformed_image(0.9).show()
+# PcxImage('scene.pcx').get_negative_image().show()

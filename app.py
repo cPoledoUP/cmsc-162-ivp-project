@@ -268,7 +268,7 @@ class OutputFrame(tk.LabelFrame):
         # remove existing image in frame first
         self.remove_image()    
         
-        grey_image = pcx_image.get_grayscale_image('image')
+        grey_image = pcx_image.get_grayscale_image()
         
         # display the negative image 
         # resize image first to fit frame

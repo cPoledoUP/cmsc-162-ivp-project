@@ -25,6 +25,8 @@ class PcxImage:
 
         self.image_data = None
         self.eof_palette = None
+
+        self.grayscale_image_data = None
         
         pcx_file.close()
     
@@ -453,40 +455,36 @@ class PcxImage:
         return disp_img
     
     ########## Project 1 Guide 4 ##########
-
-    def get_grayscale_image(self, mode : str = 'image'):
+    def process_grayscale_image_data(self) -> None:
         """
-        Returns a grayscale transformed version of the pcx image as a list or displayable image
+        Processes and stores a list of the data of the grayscale image to prevent repetition of calculation
+        """
 
-        Parameters
-        ----------
-        mode : str
-            'image', 'values'
+        self.grayscale_image_data = list()
+        for pixel in self.image_data:
+            self.grayscale_image_data.append(int((pixel[0] + pixel[1] + pixel[2]) / 3))
+
+    def get_grayscale_image(self) -> Image:
+        """
+        Returns a grayscale transformed version of the pcx image as a displayable image
 
         Returns
         -------
-        list | Image
-            a list of grayscale pixel values or a grayscale image
+        Image
+            a grayscale image
         """
         
+        # get average of values to create new pixel data
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data()
+
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
 
-        grayscale_image_data = list()
-
-        # get average of values to create new pixel data
-        for pixel in self.image_data:
-            grayscale_image_data.append((pixel[0] + pixel[1] + pixel[2]) / 3)
-        
-        if mode == 'values':
-            return grayscale_image_data
-        elif mode == 'image':
-            disp_img = Image.new('L', (width, height))
-            disp_img.putdata(grayscale_image_data)
-            return disp_img
-        else:
-            return -1
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(self.grayscale_image_data)
+        return disp_img
     
     def get_negative_image(self) -> Image:
         """
@@ -498,13 +496,15 @@ class PcxImage:
             a negative transformed pcx image
         """
 
-        grayscale_image_data = self.get_grayscale_image('values')
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data()
+
         negative_image_data = list()
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
 
-        for pixel in grayscale_image_data:
+        for pixel in self.grayscale_image_data:
             negative_image_data.append(255 - pixel)
         
         disp_img = Image.new('L', (width, height))
@@ -527,13 +527,15 @@ class PcxImage:
             a black and white transformed pcx image
         """
 
-        grayscale_image_data = self.get_grayscale_image('values')
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data()
+        
         bnw_image_data = list()
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
 
-        for pixel in grayscale_image_data:
+        for pixel in self.grayscale_image_data:
             if pixel > threshold:
                 bnw_image_data.append(255)
             else:
@@ -559,13 +561,15 @@ class PcxImage:
             a gamma transformed pcx image
         """
 
-        grayscale_image_data = self.get_grayscale_image('values')
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data()
+        
         gamma_image_data = list()
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
 
-        for pixel in grayscale_image_data:
+        for pixel in self.grayscale_image_data:
             c = 1   # based on slides
             gamma_image_data.append(c * (pixel ** gamma))
         

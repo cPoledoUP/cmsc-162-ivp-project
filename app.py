@@ -59,8 +59,8 @@ class App(tk.Tk):
 
         try:
             file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
-
-            pcx_image = PcxImage(file.name) # to be used to retrieve metadata
+            
+            pcx_image = PcxImage(file.name) # to be used to retrieve metadata\
             if len(pcx_image.get_palette_data()) == 0:
                 raise Exception("Unsupported pcx image: No palette at EOF")
         
@@ -71,7 +71,7 @@ class App(tk.Tk):
             self.main.image_metadata.message.display_all(pcx_image)
             self.main.image_metadata.tool_bar.enable_toolbar(pcx_image)
             self.main.image_frame.display_image(self.image)
-
+            self.menu_bar.editmenu.entryconfig(7, command= lambda: self.main.output_frame.display_negative_image(pcx_image))
             file.close()
         except FileNotFoundError:
             pass
@@ -104,6 +104,7 @@ class Menubar(tk.Menu):
         parent['menu'] = self
         parent.option_add('*tearOff', False)
 
+        
         # create the menu buttons
         filebutton = tk.Menu(self)
         filebutton.add_command(label="New", command=self.do_nothing)
@@ -115,15 +116,16 @@ class Menubar(tk.Menu):
         filebutton.add_command(label="Exit", command=parent.quit)
         self.add_cascade(label="File", menu=filebutton)
 
-        editmenu = tk.Menu(self)
-        editmenu.add_command(label="Undo", command=self.do_nothing)
-        editmenu.add_separator()
-        editmenu.add_command(label="Cut", command=self.do_nothing)
-        editmenu.add_command(label="Copy", command=self.do_nothing)
-        editmenu.add_command(label="Paste", command=self.do_nothing)
-        editmenu.add_command(label="Delete", command=self.do_nothing)
-        editmenu.add_command(label="Select All", command=self.do_nothing)
-        self.add_cascade(label="Edit", menu=editmenu)
+        self.editmenu = tk.Menu(self)
+        self.editmenu.add_command(label="Undo", command=self.do_nothing)
+        self.editmenu.add_separator()
+        self.editmenu.add_command(label="Cut", command=self.do_nothing)
+        self.editmenu.add_command(label="Copy", command=self.do_nothing)
+        self.editmenu.add_command(label="Paste", command=self.do_nothing)
+        self.editmenu.add_command(label="Delete", command=self.do_nothing)
+        self.editmenu.add_command(label="Select All", command=self.do_nothing)
+        self.editmenu.add_command(label="Negative", command=self.do_nothing)
+        self.add_cascade(label="Edit", menu=self.editmenu)
 
         helpmenu = tk.Menu(self)
         helpmenu.add_command(label="Help Index", command=self.do_nothing)
@@ -311,7 +313,31 @@ class OutputFrame(tk.LabelFrame):
         new_img = ImageTk.PhotoImage(new_img)
         self.label['image'] = new_img
         self.label.image = new_img
-    
+        
+    def display_gamma_transformed_image(self, pcx_image, gamma):
+        
+        self.remove_image()    
+        
+        gamma_image = pcx_image.get_gamma_transformed_image(gamma)
+        
+        # display the gamma transformed image 
+        # resize image first to fit frame
+        if float(gamma_image.size[0])/float(gamma_image.size[1]) > self.max_width/self.max_height:
+            wpercent = self.max_width/float(gamma_image.size[0])
+            hsize = int((float(gamma_image.size[1])*float(wpercent)))
+            new_img = gamma_image.resize((self.max_width, hsize))
+        else:
+            hpercent = self.max_height/float(gamma_image.size[1])
+            wsize = int((float(gamma_image.size[0])*float(hpercent)))
+            new_img = gamma_image.resize((wsize, self.max_height))
+
+        # put image in the img_container
+        self.configure(labelanchor='n', text="Gamma Transformed Image", font=('Helvetica Bold', 20))
+        new_img = ImageTk.PhotoImage(new_img)
+        self.label['image'] = new_img
+        self.label.image = new_img
+
+
     def remove_image(self):
         self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
         self.label['image'] = None
@@ -363,22 +389,22 @@ class ToolBar(tk.Frame):
         self.pack(side = tk.TOP, padx=20, pady=20)
 
         # buttons
-        self.red_button = tk.Button(self, text='RED',width=5, height= 1)
+        self.red_button = tk.Button(self, text='RED',width=5, height= 1, fg='white', bg='red')
         self.red_button.grid(row=0, column=0, padx=2)
         
-        self.green_button = tk.Button(self, text='GREEN',width=5, height= 1)
+        self.green_button = tk.Button(self, text='GREEN',width=5, height= 1, fg='white', bg='green')
         self.green_button.grid(row=0, column=1, padx=2)
         
-        self.blue_button = tk.Button(self, text='BLUE',width=5, height= 1)
+        self.blue_button = tk.Button(self, text='BLUE',width=5, height= 1, fg='white', bg='blue')
         self.blue_button.grid(row=0, column=2, padx=2)
 
-        self.grey_scale_button = tk.Button(self, text='GREY',width=5, height= 1)
+        self.grey_scale_button = tk.Button(self, text='GREY',width=5, height= 1, fg='white', bg='gray')
         self.grey_scale_button.grid(row=1, column=0, padx=2, pady=(2,10))
         
-        self.negative_button = tk.Button(self, text='NEG',width=5, height= 1)
-        self.negative_button.grid(row=1, column=1, padx=2, pady=(2,10))
+        self.gamma_button = tk.Button(self, text='GAMM',width=5, height= 1, fg='black', bg='#d3d3d3')
+        self.gamma_button.grid(row=1, column=1, padx=2, pady=(2,10))
         
-        self.bw_button = tk.Button(self, text='B/W',width=5, height= 1)
+        self.bw_button = tk.Button(self, text='B/W',width=5, height= 1, fg='black', bg='#d3d3d3')
         self.bw_button.grid(row=1, column=2, padx=2, pady=(2,10))
         
         self.bw_threshold_frame = tk.LabelFrame(self, text="B/W Threshold", bg='#fefefe', padx=20, pady=20)
@@ -416,6 +442,15 @@ class ToolBar(tk.Frame):
         self.value_label = tk.Label(self.bw_threshold_frame, text="Value:", padx=20, pady=5, bg='#fefefe')
         self.value_label.pack(side="bottom")
         
+        #gamma input label
+        self.gamma_input_label = tk.Label(self, text="Enter gamma: ", bg='#B0B0B0')
+        self.gamma_input_label.grid(row=4, column=0, columnspan=2, pady=5, padx=0)
+        
+        #gamma input 
+        self.gamma_threshold = tk.IntVar(None)
+        self.gamma_input = tk.Entry(self, textvariable=self.gamma_threshold, width=7)
+        self.gamma_input.grid(row=4, column=2, pady=5)
+        
         # start disabled
         self.disable_toolbar()
         self.disable_slider()
@@ -431,13 +466,14 @@ class ToolBar(tk.Frame):
         self.bw_slider['state'] = 'normal'
 
     def enable_toolbar(self, pcx_image):
-        self.red_button.configure(command=lambda: self.parent.parent.output_frame.display_channel(pcx_image, 'red'), state=tk.NORMAL)
-        self.green_button.configure(command=lambda: self.parent.parent.output_frame.display_channel(pcx_image, 'green'), state=tk.NORMAL)
-        self.blue_button.configure(command=lambda: self.parent.parent.output_frame.display_channel(pcx_image, 'blue'), state=tk.NORMAL)
-        self.grey_scale_button.configure(command=lambda: self.parent.parent.output_frame.display_grayscale_image(pcx_image), state=tk.NORMAL)
-        self.negative_button.configure(command=lambda: self.parent.parent.output_frame.display_negative_image(pcx_image),state=tk.NORMAL)
+        self.red_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'red'), self.disable_slider()], state=tk.NORMAL)
+        self.green_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'green'), self.disable_slider()], state=tk.NORMAL)
+        self.blue_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'blue'), self.disable_slider()], state=tk.NORMAL)
+        self.grey_scale_button.configure(command=lambda: [self.parent.parent.output_frame.display_grayscale_image(pcx_image), self.disable_slider()], state=tk.NORMAL)
+        self.gamma_button.configure(command= lambda: [self.check_entrybox(pcx_image),self.disable_slider()],state=tk.NORMAL)
         self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_bnw_image(pcx_image, self.bw_slider.get()), self.enable_slider()] ,state=tk.NORMAL)
-        
+        self.gamma_input.configure(state=tk.NORMAL)
+    
     def disable_slider(self):
         self.bw_slider['state'] = 'disabled'
     
@@ -446,9 +482,33 @@ class ToolBar(tk.Frame):
         self.green_button.config(state=tk.DISABLED)
         self.blue_button.config(state=tk.DISABLED)
         self.grey_scale_button.config(state=tk.DISABLED)
-        self.negative_button.config(state=tk.DISABLED)
+        self.gamma_button.config(state=tk.DISABLED)
         self.bw_button.config(state=tk.DISABLED)
-
+        self.gamma_input.delete(0, "end")
+        self.gamma_input.config(state=tk.DISABLED)
+        
+    def check_entrybox(self, pcx_image):
+        def isfloat(num):
+            try:
+                float(num)
+                return True
+            except ValueError:
+                return False
+            
+        input = self.gamma_input.get().strip()
+        if len(input) == 0:
+            messagebox.showerror('Error!', 'Invalid gamma value. Please input positive float/integer values')  
+        elif isfloat(input):
+            if float(input) == 0:
+                messagebox.showerror('Error!', 'Invalid gamma value. Please input positive float/integer values only')    
+            elif input[0] == '-':
+                messagebox.showerror('Error!', 'Please input positive float/integer values only')
+            else:
+                self.parent.parent.output_frame.display_gamma_transformed_image(pcx_image, float(input))
+        else:
+            messagebox.showerror('Error!', 'Invalid gamma value.')
+            
+            
 class MetaData (tk.Message):
     """
     the data retrieved from the Imported Image

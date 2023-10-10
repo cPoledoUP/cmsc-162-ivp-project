@@ -69,7 +69,6 @@ class App(tk.Tk):
             self.main.image_metadata.message.display_all(pcx_image)
             self.main.image_metadata.tool_bar.enable_toolbar(pcx_image)
             self.main.image_frame.display_image(self.image)
-            self.menu_bar.editmenu.entryconfig(7, command= lambda: self.main.output_frame.display_negative_image(pcx_image))
             file.close()
         except FileNotFoundError:
             pass
@@ -122,7 +121,6 @@ class Menubar(tk.Menu):
         self.editmenu.add_command(label="Paste", command=self.do_nothing)
         self.editmenu.add_command(label="Delete", command=self.do_nothing)
         self.editmenu.add_command(label="Select All", command=self.do_nothing)
-        self.editmenu.add_command(label="Negative", command=self.do_nothing)
         self.add_cascade(label="Edit", menu=self.editmenu)
 
         helpmenu = tk.Menu(self)
@@ -399,8 +397,8 @@ class ToolBar(tk.Frame):
         self.grey_scale_button = tk.Button(self, text='GREY',width=5, height= 1, fg='white', bg='gray')
         self.grey_scale_button.grid(row=1, column=0, padx=2, pady=(2,10))
         
-        self.gamma_button = tk.Button(self, text='GAMM',width=5, height= 1, fg='black', bg='#d3d3d3')
-        self.gamma_button.grid(row=1, column=1, padx=2, pady=(2,10))
+        self.negative_button = tk.Button(self, text='NEG',width=5, height= 1, fg='black', bg='#d3d3d3')
+        self.negative_button.grid(row=1, column=1, padx=2, pady=(2,10))
         
         self.bw_button = tk.Button(self, text='B/W',width=5, height= 1, fg='black', bg='#d3d3d3')
         self.bw_button.grid(row=1, column=2, padx=2, pady=(2,10))
@@ -445,10 +443,14 @@ class ToolBar(tk.Frame):
         self.gamma_input_label.grid(row=4, column=0, columnspan=2, pady=5, padx=0)
         
         #gamma input 
-        self.gamma_threshold = tk.StringVar()
-        self.gamma_threshold.set('1')
+        # self.gamma_threshold = tk.StringVar()
+        # self.gamma_threshold.set('1')
         self.gamma_input = tk.Entry(self, width=7)
         self.gamma_input.grid(row=4, column=2, pady=5)
+        
+        #create gamma button
+        self.gamma_button = tk.Button(self, text='Gamma Transform', height= 1, fg='black', bg='#d3d3d3')
+        self.gamma_button.grid(row=5, columnspan=3,  pady=(2,10))
         
         # start disabled
         self.disable_toolbar()
@@ -469,9 +471,11 @@ class ToolBar(tk.Frame):
         self.green_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'green'), self.disable_slider()], state=tk.NORMAL)
         self.blue_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'blue'), self.disable_slider()], state=tk.NORMAL)
         self.grey_scale_button.configure(command=lambda: [self.parent.parent.output_frame.display_grayscale_image(pcx_image), self.disable_slider()], state=tk.NORMAL)
+        self.negative_button.configure(command= lambda: [self.parent.parent.output_frame.display_negative_image(pcx_image), self.disable_slider()], state=tk.NORMAL)
         self.gamma_button.configure(command= lambda: [self.check_entrybox(pcx_image),self.disable_slider()],state=tk.NORMAL)
-        self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_bnw_image(pcx_image, self.bw_slider.get()), self.enable_slider(), self.gamma_input.delete(0, "end")] ,state=tk.NORMAL)
-        self.gamma_input.configure(textvariable=self.gamma_threshold, state=tk.NORMAL)
+        self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_bnw_image(pcx_image, self.bw_slider.get()), self.enable_slider()] ,state=tk.NORMAL)
+        self.gamma_input.configure(state=tk.NORMAL)
+        self.gamma_input.insert(0, '1')
 
     def disable_slider(self):
         self.bw_slider['state'] = 'disabled'
@@ -481,8 +485,9 @@ class ToolBar(tk.Frame):
         self.green_button.config(state=tk.DISABLED)
         self.blue_button.config(state=tk.DISABLED)
         self.grey_scale_button.config(state=tk.DISABLED)
-        self.gamma_button.config(state=tk.DISABLED)
+        self.negative_button.config(state=tk.DISABLED)
         self.bw_button.config(state=tk.DISABLED)
+        self.gamma_button.config(state=tk.DISABLED)
         self.gamma_input.delete(0, "end")
         self.gamma_input.config(state=tk.DISABLED)
         

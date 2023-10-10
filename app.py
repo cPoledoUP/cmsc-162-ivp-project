@@ -414,6 +414,10 @@ class ToolBar(tk.Frame):
         
         """
         
+        #current value of the slider
+        self.value = tk.Label(self.bw_threshold_frame, bg='#fefefe')
+        self.value.pack(side="bottom")
+        
         self.current_value = tk.IntVar()
         
         #create slider
@@ -429,10 +433,6 @@ class ToolBar(tk.Frame):
         #set default to mid
         self.bw_slider.set(127)
         self.bw_slider.pack()
-        
-        #current value of the slider
-        self.value = tk.Label(self.bw_threshold_frame, bg='#fefefe')
-        self.value.pack(side="bottom")
         
         #current value LABEL of the slider
         self.value_label = tk.Label(self.bw_threshold_frame, text="Value:", padx=20, pady=5, bg='#fefefe')

@@ -458,6 +458,8 @@ class PcxImage:
     def process_grayscale_image_data(self) -> None:
         """
         Processes and stores a list of the data of the grayscale image to prevent repetition of calculation
+
+        Transformation function: s = (R + G + B) / 3
         """
 
         self.grayscale_image_data = list()

@@ -445,8 +445,9 @@ class ToolBar(tk.Frame):
         self.gamma_input_label.grid(row=4, column=0, columnspan=2, pady=5, padx=0)
         
         #gamma input 
-        self.gamma_threshold = tk.IntVar(None)
-        self.gamma_input = tk.Entry(self, textvariable=self.gamma_threshold, width=7)
+        self.gamma_threshold = tk.StringVar()
+        self.gamma_threshold.set('1')
+        self.gamma_input = tk.Entry(self, width=7)
         self.gamma_input.grid(row=4, column=2, pady=5)
         
         # start disabled
@@ -469,9 +470,9 @@ class ToolBar(tk.Frame):
         self.blue_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'blue'), self.disable_slider()], state=tk.NORMAL)
         self.grey_scale_button.configure(command=lambda: [self.parent.parent.output_frame.display_grayscale_image(pcx_image), self.disable_slider()], state=tk.NORMAL)
         self.gamma_button.configure(command= lambda: [self.check_entrybox(pcx_image),self.disable_slider()],state=tk.NORMAL)
-        self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_bnw_image(pcx_image, self.bw_slider.get()), self.enable_slider()] ,state=tk.NORMAL)
-        self.gamma_input.configure(state=tk.NORMAL)
-    
+        self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_bnw_image(pcx_image, self.bw_slider.get()), self.enable_slider(), self.gamma_input.delete(0, "end")] ,state=tk.NORMAL)
+        self.gamma_input.configure(textvariable=self.gamma_threshold, state=tk.NORMAL)
+
     def disable_slider(self):
         self.bw_slider['state'] = 'disabled'
     

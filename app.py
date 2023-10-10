@@ -67,6 +67,7 @@ class App(tk.Tk):
             palette = pcx_image.get_image_palette(5)   # image color palette
             self.main.image_metadata.palette_frame.display_palette(palette)
             self.main.image_metadata.message.display_all(pcx_image)
+            self.main.image_metadata.tool_bar.gamma_input.delete(0, "end")
             self.main.image_metadata.tool_bar.enable_toolbar(pcx_image)
             self.main.image_frame.display_image(self.image)
             file.close()

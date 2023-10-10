@@ -356,7 +356,7 @@ class PcxImage:
          
         target_size = 16
         
-        image = Image.new(mode="RGB", size=(target_size*pixel_length, target_size*pixel_length))
+        image = Image.new(mode="RGB", size=(target_size*pixel_length, target_size*pixel_length), color='#B0B0B0')
 
         if len(self.eof_palette) == 0:
             return image

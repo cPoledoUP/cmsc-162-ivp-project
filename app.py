@@ -42,6 +42,7 @@ class App(tk.Tk):
         self.geometry(size)
         if start_zoomed:
             self.state('zoomed')
+        self.protocol("WM_DELETE_WINDOW", self.quit_app)
 
         # add widgets
         self.menu_bar = Menubar(self)
@@ -85,6 +86,12 @@ class App(tk.Tk):
         self.main.image_metadata.message.remove_display()
         self.main.image_metadata.tool_bar.disable_toolbar()
         self.main.image_metadata.tool_bar.disable_slider()
+    
+    def quit_app(self):
+        print("Exiting app...")
+        self.quit()
+        self.destroy()
+        print("Exited successfully.")
         
 class Menubar(tk.Menu):
     """
@@ -108,7 +115,7 @@ class Menubar(tk.Menu):
         filebutton.add_command(label="Save as...", command=self.do_nothing)
         filebutton.add_command(label="Close", command=parent.menu_close)
         filebutton.add_separator()
-        filebutton.add_command(label="Exit", command=parent.quit)
+        filebutton.add_command(label="Exit", command=parent.quit_app)
         self.add_cascade(label="File", menu=filebutton)
 
         self.editmenu = tk.Menu(self)

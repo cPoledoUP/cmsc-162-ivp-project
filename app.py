@@ -514,7 +514,7 @@ class ToolBar(tk.Frame):
             messagebox.showerror('Error!', 'Invalid gamma value.')
             
             
-class MetaData (tk.Message):
+class MetaData (tk.Text):
     """
     the data retrieved from the Imported Image
     """ 
@@ -527,7 +527,10 @@ class MetaData (tk.Message):
         self.remove_display()
         
     def display_all(self, image:PcxImage):
-        header = "IMAGE METADATA:\n"
+        scroll = ttk.Scrollbar(self.parent, command=self.yview)
+        # scroll.pack(side=tk.RIGHT)
+
+        header = "IMAGE METADATA:\n\n"
         all_data = (
             f"File Name: {image.location}\n"
             f"Manufacturer: {image.get_manufacturer()}\n"
@@ -543,8 +546,8 @@ class MetaData (tk.Message):
             f"Horizontal Screen Size: {image.get_h_screen_size()}\n"
             f"Vertical Screen Size: {image.get_v_screen_size()}"
         )
-                    
-        self.configure(bg='#B0B0B0', text= header + all_data, font=('Helvetica', 10), width=200)
+        self.insert('1.0', header + all_data)
+        self.configure(bg='#B0B0B0', font=('Helvetica', 10), padx=10, pady=10, width=25, relief='flat', state='disabled', yscrollcommand=scroll.set)
         self.separator.pack(side= tk.BOTTOM, fill='x')
         self.pack(side = tk.BOTTOM, expand=True)
         

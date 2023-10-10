@@ -59,10 +59,8 @@ class App(tk.Tk):
 
         try:
             file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
-            
-            pcx_image = PcxImage(file.name) # to be used to retrieve metadata\
-            if len(pcx_image.get_palette_data()) == 0:
-                raise Exception("Unsupported pcx image: No palette at EOF")
+
+            pcx_image = PcxImage(file.name) # to be used to retrieve metadata
         
             self.main.output_frame.remove_image()
             self.image = pcx_image.get_image() # image data
@@ -272,7 +270,7 @@ class OutputFrame(tk.LabelFrame):
         # remove existing image in frame first
         self.remove_image()    
         
-        grey_image = pcx_image.get_grayscale_image('image')
+        grey_image = pcx_image.get_grayscale_image()
         
         # display the negative image 
         # resize image first to fit frame

@@ -9,14 +9,10 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from tkinter.filedialog import askopenfilename
-from PIL import ImageTk, Image
+from PIL import ImageTk
 from pcx_viewer import *
 from matplotlib import pyplot as plt
-import numpy as np
-# from tkinter import * 
-from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
-import math
 
 """
 Program module structure
@@ -68,6 +64,7 @@ class App(tk.Tk):
             self.main.image_metadata.palette_frame.display_palette(palette)
             self.main.image_metadata.message.display_all(pcx_image)
             self.main.image_metadata.tool_bar.gamma_input.delete(0, "end")
+            self.main.image_metadata.tool_bar.disable_slider()
             self.main.image_metadata.tool_bar.enable_toolbar(pcx_image)
             self.main.image_frame.display_image(self.image)
             file.close()

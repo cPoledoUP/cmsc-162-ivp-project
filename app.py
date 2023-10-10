@@ -61,8 +61,6 @@ class App(tk.Tk):
             file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
 
             pcx_image = PcxImage(file.name) # to be used to retrieve metadata
-            if len(pcx_image.get_palette_data()) == 0:
-                raise Exception("Unsupported pcx image: No palette at EOF")
         
             self.main.output_frame.remove_image()
             self.image = pcx_image.get_image() # image data

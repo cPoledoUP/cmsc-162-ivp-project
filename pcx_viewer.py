@@ -22,6 +22,9 @@ class PcxImage:
         self.v_screen_size = pcx_file.read(2)
         self.filler = pcx_file.read(54)
         self.image_buffer = pcx_file.read()
+
+        self.image_data = None
+        self.eof_palette = None
         
         pcx_file.close()
     
@@ -257,30 +260,80 @@ class PcxImage:
         """
         
         return self.filler
-
-    def get_palette_data(self) -> list:
+    
+    def process_image_data(self) -> None:
         """
-        Returns the pallete at the end of the pcx file
+        Processes the image data (and possible eof palette) of the pcx file
 
-        Returns
-        -------
-        list
-            [(r, g, b), (r, g, b), ...]
+        Raises
+        ------
+        Exception
+            if inputted image is not an rgb image
         """
         
-        palette_bytes = list()
+        # https://people.sc.fsu.edu/~jburkardt/txt/pcx_format.txt
+        # http://www.fysnet.net/pcxfile.htm
+
+        dimensions = self.get_window()
+        height = dimensions[3] - dimensions[1] + 1
+        n_planes = self.get_n_planes()
+        bytes_per_line = self.get_bytes_per_line()
+        total_bytes = n_planes * bytes_per_line
+
+        image_buffer = self.image_buffer
+        image_data = list()
+
+        index = 0
+        current_line_bytes = 0
+        current_lines = 0
+
+        while index < len(image_buffer):
+
+            # track how many lines are written
+            if current_line_bytes >= total_bytes:
+                current_line_bytes = 0
+                current_lines += 1
+            
+            # stop if all image data is read
+            if current_lines == height:
+                break
+
+            if image_buffer[index] & 192 == 192:    # if top 2 bits are set
+                count = image_buffer[index] & 63    # lower 6 bits as count
+                current_line_bytes += count
+                for x in range(count):
+                    image_data.append(image_buffer[index + 1])
+                index += 2
+            else:
+                image_data.append(image_buffer[index])
+                current_line_bytes += 1
+                index += 1
+        
         palette = list()
-        if self.get_version() == 5 and self.image_buffer[-769] == 12:
-            # get last 768 bytes
-            palette_bytes = self.image_buffer[-768:]
-            rgb = list()
-            for i in range(768):
-                rgb.append(palette_bytes[i])
-                if i % 3 == 2:
-                    palette.append(tuple(rgb))
-                    rgb = list()
-  
-        return palette
+        rgb_image_data = list()
+
+        if index < len(image_buffer):   # eof palette exist
+            image_buffer = image_buffer[-768:]
+        
+            palette = [(image_buffer[i], image_buffer[i + 1], image_buffer[i + 2]) for i in range(0, len(image_buffer), 3)]
+            
+            for j in range(len(image_data)):
+                rgb_image_data.append(palette[image_data[j]])
+        elif self.get_bits_per_pixel() == 8 and n_planes == 3:
+            # convert list of data into an rgb tuple
+            for i in range(0, len(image_data), total_bytes):
+                for j in range(i, i + int(total_bytes / n_planes)):
+                    color_tuple = list()
+                    offset = 0
+                    for k in range(n_planes):
+                        color_tuple.append(image_data[j + offset])
+                        offset += bytes_per_line
+                    rgb_image_data.append(tuple(color_tuple))
+        else:
+            raise Exception("Error opening the pcx file. App only supports opening rgb images.")
+                
+        self.image_data = rgb_image_data
+        self.eof_palette = palette
     
     def get_image_palette(self, pixel_length: int) -> Image:
         """
@@ -296,117 +349,42 @@ class PcxImage:
         Image
             image of eof palette
         """
-        
-        rgb_values = self.get_palette_data()
+        if self.eof_palette == None:
+            self.process_image_data()
          
         target_size = 16
         
         image = Image.new(mode="RGB", size=(target_size*pixel_length, target_size*pixel_length))
 
-        if len(rgb_values) == 0:
+        if len(self.eof_palette) == 0:
             return image
         
         draw = ImageDraw.Draw(image)
     
         for y in range (target_size): 
             for x in range (target_size):
-                draw.rectangle([x * pixel_length,y * pixel_length, x * pixel_length + pixel_length, y * pixel_length + pixel_length], fill=rgb_values[y*target_size+x])  
+                draw.rectangle([x * pixel_length,y * pixel_length, x * pixel_length + pixel_length, y * pixel_length + pixel_length], fill=self.eof_palette[y*target_size+x])  
                       
         return image
-    
-    def get_image_data(self) -> list:
-        """
-        Returns the image data of the pcx file
-
-        Returns
-        -------
-        list
-            list of palette index per pixel if using eof palette
-        """
-        
-        # https://people.sc.fsu.edu/~jburkardt/txt/pcx_format.txt
-
-        dimensions = self.get_window()
-        width = dimensions[2] - dimensions[0] + 1
-        height = dimensions[3] - dimensions[1] + 1
-        total_bytes = self.get_n_planes() * self.get_bytes_per_line()
-
-        image_buffer = self.image_buffer
-        image_data = list()
-
-        if self.get_version() == 5 and image_buffer[-769] == 12:
-            image_buffer = image_buffer[:-769]
-
-        line_count = 0
-        line_buffer = list()
-        force_write_color = False
-
-        for byte in image_buffer:
-            if force_write_color:
-                for i in range(count):
-                    line_count += 1
-                    line_buffer.append(byte)
-                count = 0
-                force_write_color = False
-            elif byte & 192 == 192: # check if top 2 bits are set (and to 11000000 then check if the result is 11000000)
-                # return lower 6 bits (and to 00111111)
-                count = byte & 63
-                force_write_color = True
-            else:
-                line_count += 1
-                line_buffer.append(byte)
-            
-            if line_count >= total_bytes:
-                image_data.append(line_buffer)
-                line_buffer = list()
-                line_count = 0
-        
-        return image_data
     
     def get_image(self) -> Image:
         """
         Returns pcx image as a displayable image
-
-        Raises
-        ------
-        Exception
-            if pcx file is not using or does not have a palette at eof
 
         Returns
         -------
         Image
             displayable pcx image
         """
+        if self.image_data == None:
+            self.process_image_data()
         
-        palette = self.get_palette_data()
-        img_data = self.get_image_data()
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
 
         disp_img = Image.new('RGB', (width, height))
-
-        if len(palette) != 0:   # palette at eof exist, use that
-            for y, list in enumerate(img_data):
-                for x, pix in enumerate(list):
-                    disp_img.putpixel((x, y), palette[pix])
-        else:
-            raise Exception('Unsupported pcx file: not using palette at eof')
-        # elif self.get_bits_per_pixel() == 1 and self.get_n_planes() == 1:   # monochrome
-        #     for y, list in enumerate(img_data):
-        #         for x, pix in enumerate(list):
-        #             for i, bit in enumerate(bin(pix)[2:]):  # 1 bit per pixel, pix is 8 bits (1 byte)
-        #                 color = int(bit) * 255
-        #                 disp_img.putpixel((x * 8 + i, y), (color, color, color))
-        # elif self.get_bits_per_pixel() == 8 and self.get_n_planes() == 3:   # not using palette (16.7 mil color)
-        #     for y, list in enumerate(img_data):
-        #         row_len = len(list)
-        #         color_size = int(row_len / 3)
-        #         r = list[:color_size]
-        #         g = list[color_size: color_size*2]
-        #         b = list[color_size*2: color_size*3]
-        #         for x in range(color_size):
-        #             disp_img.putpixel((x, y), (r[x], g[x], b[x]))
+        disp_img.putdata(self.image_data)
 
         return disp_img
 
@@ -421,19 +399,17 @@ class PcxImage:
         dict
             {'red': list, 'green': list, 'blue': list}
         """
+        if self.image_data == None:
+            self.process_image_data()
         
         red = []
         green = []
         blue = []
 
-        pixel_data = self.get_image_data()
-        color_palette = self.get_palette_data()
-
-        for list in pixel_data:
-            for index in list:
-                red.append(color_palette[index][0])
-                green.append(color_palette[index][1])
-                blue.append(color_palette[index][2])
+        for pixel in self.image_data:
+            red.append(pixel[0])
+            green.append(pixel[1])
+            blue.append(pixel[2])
         
         return {
             'red': red,
@@ -493,8 +469,6 @@ class PcxImage:
             a list of grayscale pixel values or a grayscale image
         """
         
-        palette = self.get_palette_data()
-        image_data = self.get_image_data()
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
@@ -502,10 +476,8 @@ class PcxImage:
         grayscale_image_data = list()
 
         # get average of values to create new pixel data
-        for y in range(height):
-            for x in range(width):
-                rgb_values = palette[image_data[y][x]]
-                grayscale_image_data.append(int((rgb_values[0] + rgb_values[1] + rgb_values[2]) / 3))
+        for pixel in self.image_data:
+            grayscale_image_data.append((pixel[0] + pixel[1] + pixel[2]) / 3)
         
         if mode == 'values':
             return grayscale_image_data
@@ -602,5 +574,7 @@ class PcxImage:
 
         return disp_img
 
-
-# PcxImage('scene1.pcx').get_black_and_white_image(255).show()
+if __name__ == '__main__':
+    img = PcxImage('scene.pcx')
+    # print(img.image_buffer[-769])
+    img.show_color_channel_images('blue').show()

@@ -458,10 +458,10 @@ class PcxImage:
     def process_grayscale_image_data(self) -> None:
         """
         Processes and stores a list of the data of the grayscale image to prevent repetition of calculation
-
-        Transformation function: s = (R + G + B) / 3
         """
-
+        if self.image_data == None:
+            self.process_image_data()
+            
         self.grayscale_image_data = list()
         for pixel in self.image_data:
             self.grayscale_image_data.append(int((pixel[0] + pixel[1] + pixel[2]) / 3))
@@ -580,7 +580,14 @@ class PcxImage:
 
         return disp_img
 
+    # def get_averaging_filter (self):
+    #     filtered_image = self.get_grayscale_image()
+        
+    #     return filtered_image
+    
 if __name__ == '__main__':
-    img = PcxImage('scene.pcx')
-    # print(img.image_buffer[-769])
-    img.show_color_channel_images('blue').show()
+    # img = PcxImage('scene.pcx')
+    # # print(img.image_buffer[-769])
+    # # img.show_color_channel_images('blue').show()
+    # img.get_grayscale_image().show()
+    PcxImage('scene.pcx').get_grayscale_image().show()

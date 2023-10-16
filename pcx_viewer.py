@@ -1,5 +1,5 @@
 from PIL import Image, ImageDraw
-
+import numpy as np
 class PcxImage:
 
     def __init__(self, location: str) -> None:
@@ -580,14 +580,91 @@ class PcxImage:
 
         return disp_img
 
-    # def get_averaging_filter (self):
-    #     filtered_image = self.get_grayscale_image()
+    def get_averaging_filter (self, radius=1):
+        """ Function to get the average-filtered (blur) image
         
-    #     return filtered_image
+        Parameters:
+        ------------
+        radius : integer
+            number of pixels away from each coordinate to be used in the function
+            
+        Returns:
+        ------------
+        Image : 
+            An average-filtered image (blurred)
+            
+        """
+        
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
+        
+        filtered_image = self.grayscale_image_data
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+        two_d_list = [] # store the 2-dimensional array converted version of the grayscale_image_data
+        
+        for x in range(0, len(filtered_image), width):
+            two_d_list.append(filtered_image[x: x + width])
+        
+        new_image = [] # stores the calculated values of the average-filtered image
+        
+        for y in range(height): # rows
+            for x in range(width): # columns
+                new_image.append(self.get_mean_square(two_d_list, y, x, radius))
+
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(new_image)
+        
+        return disp_img
+        
+    def get_mean_square (self, matrix, row, col, radius):
+        """Function to calculate the mean using the neighbouring values of a given coordinate in a matrix
+
+        Parameters:
+        --------------
+        matrix (2dim array of integers): 
+            the grayscale image converted to a 2 dimensional matrix
+            
+        row (integer): 
+            The row coordinate of the element
+            
+        col (integer): 
+            The column coordinate of the element
+            
+        radius (integer): 
+            The number of neighbours the function uses
+
+        Returns:
+        --------------
+        mean (integer): 
+            Calculated mean from the neighbouring values n-units away (radius) from the coordinate
+             
+        """
+    
+        neighbors = []  # Define relative positions for neighbors according to the radius
+        for y in range(row-radius, row+radius):
+            for x in range(col-radius, col+radius):
+                neighbors.append((y,x))
+            
+        neighbor_list = []  # Stores the values of each neighbour coordinate
+
+        
+        for r, c in neighbors:  # Check if each neighbor is within the bounds of the matrix
+            if 0 <= r < len(matrix) and 0 <= c < len(matrix[0]):
+                neighbor_list.append(matrix[r][c])
+                
+        mean = 0 # Initialize the mean value
+        
+        for i in range(0, len(neighbor_list)):
+            neighbor_list[i] = int(neighbor_list[i])
+            mean = mean + neighbor_list[i]
+        
+        mean = mean/len(neighbor_list)
+        
+        return mean
     
 if __name__ == '__main__':
-    # img = PcxImage('scene.pcx')
-    # # print(img.image_buffer[-769])
-    # # img.show_color_channel_images('blue').show()
-    # img.get_grayscale_image().show()
-    PcxImage('scene.pcx').get_grayscale_image().show()
+    img = PcxImage('1.pcx')
+    img.get_averaging_filter().show()
+    

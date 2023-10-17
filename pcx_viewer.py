@@ -1,5 +1,8 @@
 from PIL import Image, ImageDraw
 import numpy as np
+import statistics
+from itertools import chain
+
 class PcxImage:
 
     def __init__(self, location: str) -> None:
@@ -580,13 +583,19 @@ class PcxImage:
 
         return disp_img
 
-    def get_averaging_filter (self, radius=1):
+    """
+    
+    AVERAGING FILTER
+    
+    """
+    
+    def get_averaging_filter (self, radius):
         """ Function to get the average-filtered (blur) image
         
         Parameters:
         ------------
         radius : integer
-            number of pixels away from each coordinate to be used in the function
+            number of pixels away from each coordinate to be used in the function (mask size)
             
         Returns:
         ------------
@@ -633,7 +642,7 @@ class PcxImage:
             The column coordinate of the element
             
         radius (integer): 
-            The number of neighbours the function uses
+            The number of neighbours the function uses (mask size)
 
         Returns:
         --------------
@@ -643,17 +652,18 @@ class PcxImage:
         """
     
         neighbors = []  # Define relative positions for neighbors according to the radius
-        for y in range(row-radius, row+radius):
-            for x in range(col-radius, col+radius):
-                neighbors.append((y,x))
-            
+        for y in range(row-radius, row+radius+1):
+            for x in range(col-radius, col+radius+1):
+                neighbors.append((y,x)) 
+        
         neighbor_list = []  # Stores the values of each neighbour coordinate
 
         
         for r, c in neighbors:  # Check if each neighbor is within the bounds of the matrix
             if 0 <= r < len(matrix) and 0 <= c < len(matrix[0]):
                 neighbor_list.append(matrix[r][c])
-                
+        
+              
         mean = 0 # Initialize the mean value
         
         for i in range(0, len(neighbor_list)):
@@ -664,7 +674,74 @@ class PcxImage:
         
         return mean
     
+    """
+    
+    MEDIAN FILTER
+    
+    """
+    
+    def get_median_filter(self, radius):
+        """
+        Creates an median-filtered version of a grayscale version of an image
+
+        Args:
+            radius (int): Determines the mask size to be used in the filter
+
+        Returns:
+            Image: median-filtered grayscale image
+        """
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
+            
+        filtered_image = self.grayscale_image_data
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+        
+        two_d_list = [] # store the 2-dimensional array converted version of the grayscale_image_data
+        
+        for x in range(0, len(filtered_image), width):
+            two_d_list.append(filtered_image[x: x + width])
+        
+        padded_list = self.pad_grid(two_d_list, padding_size=radius) # creates a zero-padded version of the created 2D list with padding=radius
+
+        median_filtered_image = [] # stores the calculated values of the average-filtered image
+        
+        for y in range(radius,height+radius): # rows
+            for x in range(radius,width+radius): # columns
+                median_filtered_image.append(self.get_median(padded_list, y, x, radius))
+        
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(median_filtered_image)
+        
+        return disp_img
+    
+    def pad_grid(self, src_, padding_size: int, pad=0): # pads & creates a passed 2D list n (padding-size) times   
+        reference = src_
+        for _ in range(padding_size):
+            reference = self.pad_frame_once(reference, pad)
+
+        return reference
+
+    def pad_frame_once(self, matrix, pad) -> list:  # pads a passed 2D list once
+        output = [[pad, *line, pad] for line in matrix]
+        return [[pad] * len(output[0]), *output, [pad] * len(output[0])]
+        
+    def get_median(self, matrix, col, row, radius):
+        neighbors = []
+        for y in range(row-radius, row+radius+1): # list all coordinates of neighbours of a particular element & stores them in a list
+            for x in range(col-radius, col+radius+1):
+                neighbors.append((x,y))
+        
+        neighbor_list = []
+        
+        for r, c in neighbors:
+            neighbor_list.append(matrix[r][c]) # since all elements are within bounds, list's each value in a single list
+            
+        median = statistics.median(neighbor_list) # returns the median of a given list
+        
+        return median 
 if __name__ == '__main__':
     img = PcxImage('1.pcx')
-    img.get_averaging_filter().show()
     
+    img.get_median_filter(radius=10).show()

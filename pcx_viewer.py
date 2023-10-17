@@ -723,10 +723,28 @@ class PcxImage:
 
         return reference
 
-    def pad_frame_once(self, matrix, pad) -> list:  # pads a passed 2D list once
+    def pad_frame_once(self, matrix, pad) -> list:  # zero pads a passed 2D list once
         output = [[pad, *line, pad] for line in matrix]
         return [[pad] * len(output[0]), *output, [pad] * len(output[0])]
+    
+    def pad_frame_edges(self, matrix):  # pads a matrix using the values of its edges
+        top_padding = matrix[0]
+        bottom_padding = matrix[-1]
+        top_bottom_padded_matrix = []
         
+        top_bottom_padded_matrix.append(top_padding)
+        for row in matrix:
+            top_bottom_padded_matrix.append(row)
+        top_bottom_padded_matrix.append(bottom_padding)
+        
+        resulting_matrix = []
+        
+        for row in top_bottom_padded_matrix:
+            side_padded_row = [row[0]] + row + [row[-1]]
+            resulting_matrix.append(side_padded_row)
+            
+        return resulting_matrix
+    
     def get_median(self, matrix, col, row, radius):
         neighbors = []
         for y in range(row-radius, row+radius+1): # list all coordinates of neighbours of a particular element & stores them in a list
@@ -741,7 +759,37 @@ class PcxImage:
         median = statistics.median(neighbor_list) # returns the median of a given list
         
         return median 
-if __name__ == '__main__':
-    img = PcxImage('1.pcx')
     
-    img.get_median_filter(radius=10).show()
+    def get_highpass_filter(self):
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
+            
+        filter_1 = [[0,1,0],
+                    [1,-4,1],
+                    [0,1,0]]
+        
+        two_d_list = []
+        filtered_image = self.grayscale_image_data
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+        
+        for x in range(0, len(filtered_image), width):
+            two_d_list.append(filtered_image[x: x + width])
+        
+        first_filter_image = []
+        padded_image = self.pad_frame_edges(filtered_image)
+        
+    def get_laplace_value(self, padded_image, filter):
+        # code ends here
+        return 1
+        
+            
+if __name__ == '__main__':
+    original_matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+]
+    
+    img = PcxImage('1.pcx')

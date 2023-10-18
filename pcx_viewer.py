@@ -726,24 +726,6 @@ class PcxImage:
         output = [[pad, *line, pad] for line in matrix]
         return [[pad] * len(output[0]), *output, [pad] * len(output[0])]
     
-    def pad_frame_edges(self, matrix):  # pads a matrix using the values of its edges
-        top_padding = matrix[0]
-        bottom_padding = matrix[-1]
-        top_bottom_padded_matrix = []
-        
-        top_bottom_padded_matrix.append(top_padding)
-        for row in matrix:
-            top_bottom_padded_matrix.append(row)
-        top_bottom_padded_matrix.append(bottom_padding)
-        
-        resulting_matrix = []
-        
-        for row in top_bottom_padded_matrix:
-            side_padded_row = [row[0]] + row + [row[-1]]
-            resulting_matrix.append(side_padded_row)
-    
-        return resulting_matrix
-    
     def get_median(self, matrix, col, row, radius):
         neighbors = []
         for y in range(row-radius, row+radius+1): # list all coordinates of neighbours of a particular element & stores them in a list
@@ -759,6 +741,9 @@ class PcxImage:
         
         return median 
     
+    """
+    LAPLACIAN FILTER
+    """
     def get_highpass_filter(self, filter):
         """
         returns a laplacian transformed version of the image
@@ -846,6 +831,24 @@ class PcxImage:
         
         return value
     
+    def pad_frame_edges(self, matrix):  # pads a matrix using the values of its edges
+        top_padding = matrix[0]
+        bottom_padding = matrix[-1]
+        top_bottom_padded_matrix = []
+        
+        top_bottom_padded_matrix.append(top_padding)
+        for row in matrix:
+            top_bottom_padded_matrix.append(row)
+        top_bottom_padded_matrix.append(bottom_padding)
+        
+        resulting_matrix = []
+        
+        for row in top_bottom_padded_matrix:
+            side_padded_row = [row[0]] + row + [row[-1]]
+            resulting_matrix.append(side_padded_row)
+    
+        return resulting_matrix
+        
 if __name__ == '__main__':
 
     img = PcxImage('1.pcx')

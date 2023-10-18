@@ -1,7 +1,6 @@
 from PIL import Image, ImageDraw
 import numpy as np
 import statistics
-from itertools import chain
 
 class PcxImage:
 
@@ -742,7 +741,7 @@ class PcxImage:
         for row in top_bottom_padded_matrix:
             side_padded_row = [row[0]] + row + [row[-1]]
             resulting_matrix.append(side_padded_row)
-            
+    
         return resulting_matrix
     
     def get_median(self, matrix, col, row, radius):
@@ -760,36 +759,95 @@ class PcxImage:
         
         return median 
     
-    def get_highpass_filter(self):
+    def get_highpass_filter(self, filter):
+        """
+        returns a laplacian transformed version of the image
+
+        Args:
+            filter (integer): Used to determine which of the available filters to use
+
+        Returns:
+            Image: Laplacian transformed image
+        """
         if self.grayscale_image_data == None:
             self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
-            
-        filter_1 = [[0,1,0],
-                    [1,-4,1],
-                    [0,1,0]]
         
-        two_d_list = []
+        # check which filter to use 
+        filter_used = []
+    
+        match filter:
+            case 1:
+                filter_1 = [0,1,0,1,-4,1,0,1,0] # First filter where the center value is negative 4
+                filter_used = filter_1
+            case 2: 
+                filter_2 = [0,-1,0,-1,4,-1,0,-1,0] # Second filter. Positive counterpart to the first one
+                filter_used = filter_2
+            case 3: 
+                filter_3 = [1,1,1,1,-8,1,1,1,1] # Third filter where the center value is negative 8
+                filter_used = filter_3 
+            case 4: 
+                filter_4 = [-1,-1,-1,-1,8,-1,-1,-1,-1] # Fourth filter. Positive counterpart to the first one
+                filter_used = filter_4
+        
         filtered_image = self.grayscale_image_data
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
         
-        for x in range(0, len(filtered_image), width):
+        two_d_list = [] # stores the 2-dimensional array converted version of the grayscale_image_data
+            
+        for x in range(0, len(filtered_image), width):  
             two_d_list.append(filtered_image[x: x + width])
         
-        first_filter_image = []
-        padded_image = self.pad_frame_edges(filtered_image)
+        padded_image = self.pad_frame_edges(two_d_list) # Pads the image using the values of its edges 
         
-    def get_laplace_value(self, padded_image, filter):
-        # code ends here
-        return 1
+        filtered_image = [] # stores the values for the filtered image
         
-            
-if __name__ == '__main__':
-    original_matrix = [
-    [1, 2, 3],
-    [4, 5, 6],
-    [7, 8, 9]
-]
+        for row in range(1, len(padded_image)-1):
+            for col in range(1, len(padded_image)-1):
+                filtered_image.append(self.get_laplace_value(col, row, padded_image, filter_used))
+        
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(filtered_image)
+        
+        return disp_img
+        
+    def get_laplace_value(self, row, col, matrix, filter):
+        """
+        Computes the filtered value for each pixel in a '.pcx' image
+
+        Args:
+            row (integer): column coordinate of the pixel
+            col (integer): row coordinate of the pixel
+            matrix (_type_): the padded matrix of the image
+            filter (_type_): the filter to be used
+
+        Returns:
+            value (integer): the value to replace each current pixel value
+        """
+        
+        neighbors = [] # stores the coordinates of the surrounding(neighbouring) pixels of the current pixel
+        
+        for x in range(col-1, col+2):    
+            for y in range(row-1,row+2): 
+                neighbors.append((x,y))
+
+        neighbor_list = []  # stores the value of each neighbouring pixel
+        
+        for r, c in neighbors:
+            neighbor_list.append(matrix[r][c]) # since all elements are within bounds, list's each value in a single list
+        
+        values = []
+        
+        for x in range(0, len(neighbor_list)):
+            values.append(neighbor_list[x] * filter[x]) # multiply each value of the filter to each corresponding coordinate values of the neighbouring pixels
+        
+        value = sum(values)
+        
+        return value
     
+if __name__ == '__main__':
+
     img = PcxImage('1.pcx')
+    img.get_highpass_filter(filter=4).show()
+    

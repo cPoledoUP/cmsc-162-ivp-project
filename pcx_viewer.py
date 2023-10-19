@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw
 import numpy as np
 import statistics
+import math
 
 class PcxImage:
 
@@ -913,6 +914,73 @@ class PcxImage:
         
         return disp_img
     
+    def get_image_gradient(self):
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
+
+        filtered_image = self.grayscale_image_data
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+        two_d_list = []
+        
+        for x in range(0, len(filtered_image), width):
+            two_d_list.append(filtered_image[x: x + width])
+        
+        padded_two_d_list = self.pad_frame_once(matrix=two_d_list, pad=0)
+
+        gradient_values = []
+        
+        for row in range(1, height+1):
+            for col in range(1, width+1):
+                gradient_values.append(math.sqrt(self.get_x_gradient(row, col, padded_two_d_list)**2 + self.get_y_gradient(row, col, padded_two_d_list)**2))
+        
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(gradient_values)
+        
+        return disp_img
+        
+    def get_x_gradient(self, row, col, matrix):
+        x_direction_kernel = [1, 0, -1, 2, 0, -2, 1, 0, -1]
+        
+        neighbors = []  # Define relative positions for neighbors according to the radius
+        for y in range(row-1, row+2):
+            for x in range(col-1, col+2):
+                neighbors.append((y,x))
+        
+        neighbour_list = []
+        for r, c in neighbors:
+            neighbour_list.append(matrix[r][c])
+        
+        values = []
+        for i in range(len(neighbour_list)):
+            values.append(neighbour_list[i] * x_direction_kernel[i])
+    
+        value = sum(values)
+        
+        return value
+    
+    def get_y_gradient(self, row, col, matrix):
+        y_direction_kernel = [-1, -2, -1, 0, 0, 0, 1, 2, 1]
+        
+        neighbors = []  # Define relative positions for neighbors according to the radius
+        for y in range(row-1, row+2):
+            for x in range(col-1, col+2):
+                neighbors.append((y,x))
+        
+        neighbour_list = []
+        for r, c in neighbors:
+            neighbour_list.append(matrix[r][c])
+        
+        values = []
+        for i in range(len(neighbour_list)):
+            values.append(neighbour_list[i] * y_direction_kernel[i])
+    
+        value = sum(values)
+        
+        return value          
+    
 if __name__ == '__main__':
 
     img = PcxImage('1.pcx')
+    img.get_image_gradient().show()

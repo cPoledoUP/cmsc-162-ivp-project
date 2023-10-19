@@ -624,7 +624,7 @@ class PcxImage:
         disp_img = Image.new('L', (width, height))
         disp_img.putdata(new_image)
         
-        return disp_img
+        return [disp_img, new_image]
         
     def get_mean_square (self, matrix, row, col, radius):
         """Function to calculate the mean using the neighbouring values of a given coordinate in a matrix
@@ -848,9 +848,41 @@ class PcxImage:
             resulting_matrix.append(side_padded_row)
     
         return resulting_matrix
+
+    def get_unsharped_image(self):
+        """
+        Unsharps (sharpens) an image using the formula 
+        Unsharped_image = Grayscale_image + k * (Grayscale_image - average_filtered_image())
+
+        Returns:
+            Image: Image of the Unsharped image
+        """
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
+        
+        filtered_image = self.grayscale_image_data
+        average_filtered_image = self.get_averaging_filter(radius=2)[1] # get the average filtered image data 
+        result_original_minus_blurred = [] # stores in a list all the grayscale - average_filtered data
+        
+        for i in range(len(average_filtered_image)):
+            result_original_minus_blurred.append(filtered_image[i] - average_filtered_image[i])
+        
+        unsharped_image = [] # store the unsharped image data
+        k = 1 # k = 1 is for unsharp masking
+        
+        for i in range(len(filtered_image)):
+            unsharped_image.append(filtered_image[i] + k * result_original_minus_blurred[i]) # perform the formula on each pixel
+        
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+        
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(unsharped_image)
+        
+        return disp_img
         
 if __name__ == '__main__':
 
     img = PcxImage('1.pcx')
-    img.get_highpass_filter(filter=4).show()
-    
+    img.get_unsharped_image().show()

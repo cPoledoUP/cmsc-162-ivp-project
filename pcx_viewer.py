@@ -786,16 +786,16 @@ class PcxImage:
         
         padded_image = self.pad_frame_edges(two_d_list) # Pads the image using the values of its edges 
         
-        filtered_image = [] # stores the values for the filtered image
+        highpassed_image = [] # stores the values for the filtered image
         
         for row in range(1, len(padded_image)-1):
             for col in range(1, len(padded_image)-1):
-                filtered_image.append(self.get_laplace_value(col, row, padded_image, filter_used))
+                highpassed_image.append(self.get_laplace_value(col, row, padded_image, filter_used))
         
         disp_img = Image.new('L', (width, height))
-        disp_img.putdata(filtered_image)
+        disp_img.putdata(highpassed_image)
         
-        return disp_img
+        return [disp_img, highpassed_image]
         
     def get_laplace_value(self, row, col, matrix, filter):
         """
@@ -852,7 +852,7 @@ class PcxImage:
     def get_unsharped_image(self):
         """
         Unsharps (sharpens) an image using the formula 
-        Unsharped_image = Grayscale_image + k * (Grayscale_image - average_filtered_image())
+        Unsharped_image = Grayscale_image + * (Grayscale_image - average_filtered_image())
 
         Returns:
             Image: Image of the Unsharped image
@@ -862,16 +862,17 @@ class PcxImage:
         
         filtered_image = self.grayscale_image_data
         average_filtered_image = self.get_averaging_filter(radius=2)[1] # get the average filtered image data 
-        result_original_minus_blurred = [] # stores in a list all the grayscale - average_filtered data
+        mask = [] # stores in a list all the grayscale - average_filtered data
         
         for i in range(len(average_filtered_image)):
-            result_original_minus_blurred.append(filtered_image[i] - average_filtered_image[i])
+            mask.append(filtered_image[i] - average_filtered_image[i]) # get the mask
         
         unsharped_image = [] # store the unsharped image data
-        k = 1 # k = 1 is for unsharp masking
+        
+        k = 1 # for unsharp masking
         
         for i in range(len(filtered_image)):
-            unsharped_image.append(filtered_image[i] + k * result_original_minus_blurred[i]) # perform the formula on each pixel
+            unsharped_image.append(filtered_image[i] + k * mask[i]) # apply the mask on all pixels
         
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
@@ -881,8 +882,37 @@ class PcxImage:
         disp_img.putdata(unsharped_image)
         
         return disp_img
+    
+    def get_highboost_filtered_image(self, A):
+        """
+        returns a highboost filtered version of the image using the formula:
+        highboosted_image = (A-1)Original + Highpass(1) where A is the intensity
+
+        Args:
+            A (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
         
+        filtered_image = self.grayscale_image_data
+        highpassed_image = self.get_highpass_filter(filter=1)[1]
+        highboosted_image = []
+        
+        for i in range(len(filtered_image)):
+            highboosted_image.append((A-1) * filtered_image[i] + highpassed_image[i])
+        
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+        
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(highboosted_image)
+        
+        return disp_img
+    
 if __name__ == '__main__':
 
     img = PcxImage('1.pcx')
-    img.get_unsharped_image().show()

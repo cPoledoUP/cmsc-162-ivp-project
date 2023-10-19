@@ -889,20 +889,20 @@ class PcxImage:
         highboosted_image = (A-1)Original + Highpass(1) where A is the intensity
 
         Args:
-            A (_type_): _description_
+            A (integer): determines the intensity of the highboost filter to be applied
 
         Returns:
-            _type_: _description_
+            Image: highboost filtered version of the image
         """
         if self.grayscale_image_data == None:
             self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
         
         filtered_image = self.grayscale_image_data
-        highpassed_image = self.get_highpass_filter(filter=1)[1]
-        highboosted_image = []
+        highpassed_image = self.get_highpass_filter(filter=1)[1] # store the highpassed version of the image using the first filter
+        highboosted_image = [] # store the highboosted image data
         
         for i in range(len(filtered_image)):
-            highboosted_image.append((A-1) * filtered_image[i] + highpassed_image[i])
+            highboosted_image.append((A-1) * filtered_image[i] + highpassed_image[i]) # apply the function for each
         
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1

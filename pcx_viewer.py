@@ -1,7 +1,4 @@
 from PIL import Image, ImageDraw
-import numpy as np
-import statistics
-import math
 
 class PcxImage:
 
@@ -583,7 +580,7 @@ class PcxImage:
 
         return disp_img
 
-    ########## Project 1 Guide 4 ##########
+    ########## Project 1 Guide 5 ##########
 
     # Helper functions
     def get_neighbors(self, coordinates: tuple, radius: int = 1, pad: int = 0) -> list:

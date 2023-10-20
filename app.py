@@ -246,98 +246,58 @@ class OutputFrame(tk.LabelFrame):
                                master = self)
         self.canvas.get_tk_widget().pack(padx=20, pady=20)
         
-    def display_negative_image(self, pcx_image):
+    def display_transformed_image(self, pcx_image: PcxImage, mode, *args):
         # remove existing image in frame first
         self.remove_image()
         
-        negative_image = pcx_image.get_negative_image()
+        match mode:
+            case 'GREY':
+                image = pcx_image.get_grayscale_image()
+                label = 'Grayscale Image'
+            case 'NEG':
+                image = pcx_image.get_negative_image()
+                label = 'Negative Image'
+            case 'B/W':
+                image = pcx_image.get_black_and_white_image(args[0])
+                label = 'Black and White Image'
+            case 'GAMMA':
+                image = pcx_image.get_gamma_transformed_image(args[0])
+                label = 'Gamma Transformed Image'
+            case 'AVE':
+                image = pcx_image.get_average_filtered_image(args[0])
+                label = 'Average Filtered Image'
+            case 'MED':
+                image = pcx_image.get_median_filtered_image(args[0])
+                label = 'Median Filtered Image'
+            case 'HI':
+                image = pcx_image.get_highpass_filtered_image(args[0])
+                label = 'Highpass Filtered Image'
+            case 'UNSHARP':
+                image = pcx_image.get_unsharp_masked_image()
+                label = 'Unsharp Masking Filtered Image'
+            case 'HIBOOST':
+                image = pcx_image.get_highboost_filtered_image(args[0])
+                label = 'Highboost Filtered Image'
+            case 'EDGE':
+                image = pcx_image.get_image_gradient()
+                label = 'Sobel Operated Image Gradient'
         
-        # display the negative image 
+        # display the image 
         # resize image first to fit frame
-        if float(negative_image.size[0])/float(negative_image.size[1]) > self.max_width/self.max_height:
-            wpercent = self.max_width/float(negative_image.size[0])
-            hsize = int((float(negative_image.size[1])*float(wpercent)))
-            new_img = negative_image.resize((self.max_width, hsize))
+        if float(image.size[0])/float(image.size[1]) > self.max_width/self.max_height:
+            wpercent = self.max_width/float(image.size[0])
+            hsize = int((float(image.size[1])*float(wpercent)))
+            new_img = image.resize((self.max_width, hsize))
         else:
-            hpercent = self.max_height/float(negative_image.size[1])
-            wsize = int((float(negative_image.size[0])*float(hpercent)))
-            new_img = negative_image.resize((wsize, self.max_height))
+            hpercent = self.max_height/float(image.size[1])
+            wsize = int((float(image.size[0])*float(hpercent)))
+            new_img = image.resize((wsize, self.max_height))
 
         # put image in the img_container
-        self.configure(labelanchor='n', text="Negative Image", font=('Helvetica Bold', 20))
+        self.configure(labelanchor='n', text=label, font=('Helvetica Bold', 20))
         new_img = ImageTk.PhotoImage(new_img)
         self.label['image'] = new_img
         self.label.image = new_img
-        
-    def display_grayscale_image (self, pcx_image):
-        # remove existing image in frame first
-        self.remove_image()    
-        
-        grey_image = pcx_image.get_grayscale_image()
-        
-        # display the negative image 
-        # resize image first to fit frame
-        if float(grey_image.size[0])/float(grey_image.size[1]) > self.max_width/self.max_height:
-            wpercent = self.max_width/float(grey_image.size[0])
-            hsize = int((float(grey_image.size[1])*float(wpercent)))
-            new_img = grey_image.resize((self.max_width, hsize))
-        else:
-            hpercent = self.max_height/float(grey_image.size[1])
-            wsize = int((float(grey_image.size[0])*float(hpercent)))
-            new_img = grey_image.resize((wsize, self.max_height))
-
-        # put image in the img_container
-        self.configure(labelanchor='n', text="Grayscale Image", font=('Helvetica Bold', 20))
-        new_img = ImageTk.PhotoImage(new_img)
-        self.label['image'] = new_img
-        self.label.image = new_img
-    
-    def display_bnw_image(self, pcx_image, threshold):
-        # remove existing image in frame first
-        self.remove_image()    
-        
-        bnw_image = pcx_image.get_black_and_white_image(threshold)
-        
-        # display the black and white image 
-        # resize image first to fit frame
-        if float(bnw_image.size[0])/float(bnw_image.size[1]) > self.max_width/self.max_height:
-            wpercent = self.max_width/float(bnw_image.size[0])
-            hsize = int((float(bnw_image.size[1])*float(wpercent)))
-            new_img = bnw_image.resize((self.max_width, hsize))
-        else:
-            hpercent = self.max_height/float(bnw_image.size[1])
-            wsize = int((float(bnw_image.size[0])*float(hpercent)))
-            new_img = bnw_image.resize((wsize, self.max_height))
-
-        # put image in the img_container
-        self.configure(labelanchor='n', text="Black and White Image", font=('Helvetica Bold', 20))
-        new_img = ImageTk.PhotoImage(new_img)
-        self.label['image'] = new_img
-        self.label.image = new_img
-        
-    def display_gamma_transformed_image(self, pcx_image, gamma):
-        
-        self.remove_image()    
-        
-        gamma_image = pcx_image.get_gamma_transformed_image(gamma)
-        
-        # display the gamma transformed image 
-        # resize image first to fit frame
-        if float(gamma_image.size[0])/float(gamma_image.size[1]) > self.max_width/self.max_height:
-            wpercent = self.max_width/float(gamma_image.size[0])
-            hsize = int((float(gamma_image.size[1])*float(wpercent)))
-            new_img = gamma_image.resize((self.max_width, hsize))
-        else:
-            hpercent = self.max_height/float(gamma_image.size[1])
-            wsize = int((float(gamma_image.size[0])*float(hpercent)))
-            new_img = gamma_image.resize((wsize, self.max_height))
-
-        # put image in the img_container
-        self.configure(labelanchor='n', text="Gamma Transformed Image", font=('Helvetica Bold', 20))
-        new_img = ImageTk.PhotoImage(new_img)
-        self.label['image'] = new_img
-        self.label.image = new_img
-
 
     def remove_image(self):
         self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
@@ -390,22 +350,22 @@ class ToolBar(tk.Frame):
         self.pack(side = tk.TOP, padx=20, pady=20)
 
         # buttons
-        self.red_button = tk.Button(self, text='RED',width=5, height= 1, fg='white', bg='red')
+        self.red_button = tk.Button(self, text='RED',width=7, height= 1, fg='white', bg='red')
         self.red_button.grid(row=0, column=0, padx=2)
         
-        self.green_button = tk.Button(self, text='GREEN',width=5, height= 1, fg='white', bg='green')
+        self.green_button = tk.Button(self, text='GREEN',width=7, height= 1, fg='white', bg='green')
         self.green_button.grid(row=0, column=1, padx=2)
         
-        self.blue_button = tk.Button(self, text='BLUE',width=5, height= 1, fg='white', bg='blue')
+        self.blue_button = tk.Button(self, text='BLUE',width=7, height= 1, fg='white', bg='blue')
         self.blue_button.grid(row=0, column=2, padx=2)
 
-        self.grey_scale_button = tk.Button(self, text='GREY',width=5, height= 1, fg='white', bg='gray')
+        self.grey_scale_button = tk.Button(self, text='GREY',width=7, height= 1, fg='white', bg='gray')
         self.grey_scale_button.grid(row=1, column=0, padx=2, pady=(2,10))
         
-        self.negative_button = tk.Button(self, text='NEG',width=5, height= 1, fg='black', bg='#d3d3d3')
+        self.negative_button = tk.Button(self, text='NEG',width=7, height= 1, fg='black', bg='#d3d3d3')
         self.negative_button.grid(row=1, column=1, padx=2, pady=(2,10))
         
-        self.bw_button = tk.Button(self, text='B/W',width=5, height= 1, fg='black', bg='#d3d3d3')
+        self.bw_button = tk.Button(self, text='B/W',width=7, height= 1, fg='black', bg='#d3d3d3')
         self.bw_button.grid(row=1, column=2, padx=2, pady=(2,10))
         
         self.bw_threshold_frame = tk.LabelFrame(self, text="B/W Threshold", bg='#fefefe', padx=20, pady=20)
@@ -456,6 +416,23 @@ class ToolBar(tk.Frame):
         #create gamma button
         self.gamma_button = tk.Button(self, text='Gamma Transform', height= 1, fg='black', bg='#d3d3d3')
         self.gamma_button.grid(row=5, columnspan=3,  pady=(2,10))
+
+        filter_button_label = tk.Label(self, text='Spatial Filtering', font=('Helvetica Bold', 10), bg='#b0b0b0', pady=5)
+        filter_button_label.grid(row=6, column=0, columnspan=3)
+
+        # filter buttons
+        self.averaging_filter_button = tk.Button(self, text='AVE',width=7, height= 1)
+        self.averaging_filter_button.grid(row=7, column=0, padx=2)
+        self.median_filter_button = tk.Button(self, text='MED',width=7, height= 1)
+        self.median_filter_button.grid(row=7, column=1, padx=2)
+        self.highpass_filter_button = tk.Button(self, text='HI',width=7, height= 1)
+        self.highpass_filter_button.grid(row=7, column=2, padx=2)
+        self.unsharp_masking_button = tk.Button(self, text='UNSHARP',width=7, height= 1)
+        self.unsharp_masking_button.grid(row=8, column=0, padx=2)
+        self.highboost_filter_button = tk.Button(self, text='HIBOOST',width=7, height= 1)
+        self.highboost_filter_button.grid(row=8, column=1, padx=2)
+        self.gradient_filter_button = tk.Button(self, text='EDGE',width=7, height= 1)
+        self.gradient_filter_button.grid(row=8, column=2, padx=2)
         
         # start disabled
         self.disable_toolbar()
@@ -475,12 +452,18 @@ class ToolBar(tk.Frame):
         self.red_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'red'), self.disable_slider()], state=tk.NORMAL)
         self.green_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'green'), self.disable_slider()], state=tk.NORMAL)
         self.blue_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'blue'), self.disable_slider()], state=tk.NORMAL)
-        self.grey_scale_button.configure(command=lambda: [self.parent.parent.output_frame.display_grayscale_image(pcx_image), self.disable_slider()], state=tk.NORMAL)
-        self.negative_button.configure(command= lambda: [self.parent.parent.output_frame.display_negative_image(pcx_image), self.disable_slider()], state=tk.NORMAL)
+        self.grey_scale_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'GREY'), self.disable_slider()], state=tk.NORMAL)
+        self.negative_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'NEG'), self.disable_slider()], state=tk.NORMAL)
         self.gamma_button.configure(command= lambda: [self.check_entrybox(pcx_image),self.disable_slider()],state=tk.NORMAL)
-        self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_bnw_image(pcx_image, self.bw_slider.get()), self.enable_slider()] ,state=tk.NORMAL)
+        self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'B/W', self.bw_slider.get()), self.enable_slider()] ,state=tk.NORMAL)
         self.gamma_input.configure(state=tk.NORMAL)
         self.gamma_input.insert(0, '1')
+        self.averaging_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'AVE', 1), self.disable_slider()], state=tk.NORMAL)
+        self.median_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'MED', 1), self.disable_slider()], state=tk.NORMAL)
+        self.highpass_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'HI', 1), self.disable_slider()], state=tk.NORMAL)
+        self.unsharp_masking_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'UNSHARP'), self.disable_slider()], state=tk.NORMAL)
+        self.highboost_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'HIBOOST', 2), self.disable_slider()], state=tk.NORMAL)
+        self.gradient_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'EDGE'), self.disable_slider()], state=tk.NORMAL)
 
     def disable_slider(self):
         self.bw_slider['state'] = 'disabled'
@@ -495,6 +478,12 @@ class ToolBar(tk.Frame):
         self.gamma_button.config(state=tk.DISABLED)
         self.gamma_input.delete(0, "end")
         self.gamma_input.config(state=tk.DISABLED)
+        self.averaging_filter_button.config(state=tk.DISABLED)
+        self.median_filter_button.config(state=tk.DISABLED)
+        self.highpass_filter_button.config(state=tk.DISABLED)
+        self.unsharp_masking_button.config(state=tk.DISABLED)
+        self.highboost_filter_button.config(state=tk.DISABLED)
+        self.gradient_filter_button.config(state=tk.DISABLED)
         
     def check_entrybox(self, pcx_image):
         def isfloat(num):
@@ -513,7 +502,7 @@ class ToolBar(tk.Frame):
             elif input[0] == '-':
                 messagebox.showerror('Error!', 'Please input positive float/integer values only')
             else:
-                self.parent.parent.output_frame.display_gamma_transformed_image(pcx_image, float(input))
+                self.parent.parent.output_frame.display_transformed_image(pcx_image, 'GAMMA', float(input))
         else:
             messagebox.showerror('Error!', 'Invalid gamma value.')
             
@@ -532,7 +521,7 @@ class MetaData (tk.Text):
         
     def display_all(self, image:PcxImage):
         scroll = ttk.Scrollbar(self.parent, command=self.yview)
-        # scroll.pack(side=tk.RIGHT)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         header = "IMAGE METADATA:\n\n"
         all_data = (

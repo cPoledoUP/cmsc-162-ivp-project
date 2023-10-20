@@ -583,297 +583,191 @@ class PcxImage:
 
         return disp_img
 
-    """
+    ########## Project 1 Guide 4 ##########
+
+    # Helper functions
+    def get_neighbors(self, coordinates: tuple, radius: int = 1, pad: int = 0) -> list:
+        """
+        Returns the neighboring pixels of a given pixel coordinate
+
+        Parameters:
+        -----------
+        coordinates : tuple
+            coordinates of the pixel as (x, y)
+        radius : int
+            radius of the neighboring area to get (default: 1 (or 3x3 area))
+        pad : int
+            value for out of bounds pixels (default: 0)
+        
+        Returns:
+        --------
+        list
+            the neighboring pixels as a list
+        """
+        
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data()
+
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+
+        neighbors = list()
+        # traverse each pixel starting from the upper-left to the lower-right pixels
+        for y in range(coordinates[1] - radius, coordinates[1] + radius + 1):
+            for x in range(coordinates[0] - radius, coordinates[0] + radius + 1):
+                if x < 0 or x >= width or y < 0 or y >= height: # if out of bounds index
+                    neighbors.append(pad)
+                else:
+                    neighbors.append(self.grayscale_image_data[y * width + x])
+        
+        return neighbors
     
-    AVERAGING FILTER
-    
-    """
-    
-    def get_averaging_filter (self, radius):
-        """ Function to get the average-filtered (blur) image
+    # Image functions
+    def get_average_filtered_image(self, radius: int = 1) -> Image:
+        """
+        Function to get the average-filtered (blur) image
         
         Parameters:
         ------------
-        radius : integer
+        radius : int
             number of pixels away from each coordinate to be used in the function (mask size)
             
         Returns:
         ------------
-        Image : 
+        Image
             An average-filtered image (blurred)
             
         """
-        
-        if self.grayscale_image_data == None:
-            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
-        
-        filtered_image = self.grayscale_image_data
-        dimensions = self.get_window()
-        width = dimensions[2] - dimensions[0] + 1
-        height = dimensions[3] - dimensions[1] + 1
-        two_d_list = [] # store the 2-dimensional array converted version of the grayscale_image_data
-        
-        for x in range(0, len(filtered_image), width):
-            two_d_list.append(filtered_image[x: x + width])
-        
-        new_image = [] # stores the calculated values of the average-filtered image
-        
-        for y in range(height): # rows
-            for x in range(width): # columns
-                new_image.append(self.get_mean_square(two_d_list, y, x, radius))
 
-        disp_img = Image.new('L', (width, height))
-        disp_img.putdata(new_image)
-        
-        return [disp_img, new_image]
-        
-    def get_mean_square (self, matrix, row, col, radius):
-        """Function to calculate the mean using the neighbouring values of a given coordinate in a matrix
-
-        Parameters:
-        --------------
-        matrix (2dim array of integers): 
-            the grayscale image converted to a 2 dimensional matrix
-            
-        row (integer): 
-            The row coordinate of the element
-            
-        col (integer): 
-            The column coordinate of the element
-            
-        radius (integer): 
-            The number of neighbours the function uses (mask size)
-
-        Returns:
-        --------------
-        mean (integer): 
-            Calculated mean from the neighbouring values n-units away (radius) from the coordinate
-             
-        """
-    
-        neighbors = []  # Define relative positions for neighbors according to the radius
-        for y in range(row-radius, row+radius+1):
-            for x in range(col-radius, col+radius+1):
-                neighbors.append((y,x)) 
-        
-        neighbor_list = []  # Stores the values of each neighbour coordinate
-
-        
-        for r, c in neighbors:  # Check if each neighbor is within the bounds of the matrix
-            if 0 <= r < len(matrix) and 0 <= c < len(matrix[0]):
-                neighbor_list.append(matrix[r][c])
-        
-              
-        mean = 0 # Initialize the mean value
-        
-        for i in range(0, len(neighbor_list)):
-            neighbor_list[i] = int(neighbor_list[i])
-            mean = mean + neighbor_list[i]
-        
-        mean = mean/len(neighbor_list)
-        
-        return mean
-    
-    """
-    
-    MEDIAN FILTER
-    
-    """
-    
-    def get_median_filter(self, radius):
-        """
-        Creates an median-filtered version of a grayscale version of an image
-
-        Args:
-            radius (int): Determines the mask size to be used in the filter
-
-        Returns:
-            Image: median-filtered grayscale image
-        """
-        if self.grayscale_image_data == None:
-            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
-            
-        filtered_image = self.grayscale_image_data
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
         
-        two_d_list = [] # store the 2-dimensional array converted version of the grayscale_image_data
+        filtered_image = [] # stores the calculated values of the average-filtered image
         
-        for x in range(0, len(filtered_image), width):
-            two_d_list.append(filtered_image[x: x + width])
-        
-        padded_list = self.pad_grid(two_d_list, padding_size=radius) # creates a zero-padded version of the created 2D list with padding=radius
+        for y in range(height):
+            for x in range(width):
+                neighbors = self.get_neighbors((x, y), radius)
+                filtered_image.append(int(sum(neighbors) / len(neighbors)))
 
-        median_filtered_image = [] # stores the calculated values of the average-filtered image
-        
-        for y in range(radius,height+radius): # rows
-            for x in range(radius,width+radius): # columns
-                median_filtered_image.append(self.get_median(padded_list, y, x, radius))
-        
         disp_img = Image.new('L', (width, height))
-        disp_img.putdata(median_filtered_image)
+        disp_img.putdata(filtered_image)
         
         return disp_img
     
-    def pad_grid(self, src_, padding_size: int, pad=0): # pads & creates a passed 2D list n (padding-size) times   
-        reference = src_
-        for _ in range(padding_size):
-            reference = self.pad_frame_once(reference, pad)
-
-        return reference
-
-    def pad_frame_once(self, matrix, pad) -> list:  # zero pads a passed 2D list once
-        output = [[pad, *line, pad] for line in matrix]
-        return [[pad] * len(output[0]), *output, [pad] * len(output[0])]
-    
-    def get_median(self, matrix, col, row, radius):
-        neighbors = []
-        for y in range(row-radius, row+radius+1): # list all coordinates of neighbours of a particular element & stores them in a list
-            for x in range(col-radius, col+radius+1):
-                neighbors.append((x,y))
-        
-        neighbor_list = []
-        
-        for r, c in neighbors:
-            neighbor_list.append(matrix[r][c]) # since all elements are within bounds, list's each value in a single list
-            
-        median = statistics.median(neighbor_list) # returns the median of a given list
-        
-        return median 
-    
-    """
-    LAPLACIAN FILTER
-    """
-    def get_highpass_filter(self, filter):
+    def get_median_filtered_image(self, radius: int = 1) -> Image:
         """
-        returns a laplacian transformed version of the image
+        Creates an median-filtered version of a grayscale version of an image
 
-        Args:
-            filter (integer): Used to determine which of the available filters to use
+        Parameters
+        ----------
+        radius : int
+            Determines the mask size to be used in the filter
 
-        Returns:
-            Image: Laplacian transformed image
+        Returns
+        -------
+        Image
+            median-filtered grayscale image
         """
-        if self.grayscale_image_data == None:
-            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
-        
-        # check which filter to use 
-        filter_used = []
-    
-        match filter:
-            case 1:
-                filter_1 = [0,1,0,1,-4,1,0,1,0] # First filter where the center value is negative 4
-                filter_used = filter_1
-            case 2: 
-                filter_2 = [0,-1,0,-1,4,-1,0,-1,0] # Second filter. Positive counterpart to the first one
-                filter_used = filter_2
-            case 3: 
-                filter_3 = [1,1,1,1,-8,1,1,1,1] # Third filter where the center value is negative 8
-                filter_used = filter_3 
-            case 4: 
-                filter_4 = [-1,-1,-1,-1,8,-1,-1,-1,-1] # Fourth filter. Positive counterpart to the first one
-                filter_used = filter_4
-        
-        filtered_image = self.grayscale_image_data
+
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
         
-        two_d_list = [] # stores the 2-dimensional array converted version of the grayscale_image_data
-            
-        for x in range(0, len(filtered_image), width):  
-            two_d_list.append(filtered_image[x: x + width])
+        filtered_image = []
+
+        middle_index = int(((2 * radius + 1) ** 2) / 2) 
+        # 2*radius+1 is side of mask, square and you get the area or total number of pixels in mask
+        # divide by 2, and getting the floor, you get the middle index (no need +1 since index starts from 0)
+        # (optimization) this is calculated once here instead of everytime in the for loop below
         
-        padded_image = self.pad_frame_edges(two_d_list) # Pads the image using the values of its edges 
-        
-        highpassed_image = [] # stores the values for the filtered image
-        
-        for row in range(1, len(padded_image)-1):
-            for col in range(1, len(padded_image)-1):
-                highpassed_image.append(self.get_laplace_value(col, row, padded_image, filter_used))
-        
+        for y in range(height):
+            for x in range(width):
+                neighbors = self.get_neighbors((x, y), radius)
+                neighbors.sort()
+                filtered_image.append(neighbors[middle_index])   # median is middle index of sorted list
+
         disp_img = Image.new('L', (width, height))
-        disp_img.putdata(highpassed_image)
+        disp_img.putdata(filtered_image)
         
-        return [disp_img, highpassed_image]
-        
-    def get_laplace_value(self, row, col, matrix, filter):
-        """
-        Computes the filtered value for each pixel in a '.pcx' image
-
-        Args:
-            row (integer): column coordinate of the pixel
-            col (integer): row coordinate of the pixel
-            matrix (_type_): the padded matrix of the image
-            filter (_type_): the filter to be used
-
-        Returns:
-            value (integer): the value to replace each current pixel value
-        """
-        
-        neighbors = [] # stores the coordinates of the surrounding(neighbouring) pixels of the current pixel
-        
-        for x in range(col-1, col+2):    
-            for y in range(row-1,row+2): 
-                neighbors.append((x,y))
-
-        neighbor_list = []  # stores the value of each neighbouring pixel
-        
-        for r, c in neighbors:
-            neighbor_list.append(matrix[r][c]) # since all elements are within bounds, list's each value in a single list
-        
-        values = []
-        
-        for x in range(0, len(neighbor_list)):
-            values.append(neighbor_list[x] * filter[x]) # multiply each value of the filter to each corresponding coordinate values of the neighbouring pixels
-        
-        value = sum(values)
-        
-        return value
+        return disp_img
     
-    def pad_frame_edges(self, matrix):  # pads a matrix using the values of its edges
-        top_padding = matrix[0]
-        bottom_padding = matrix[-1]
-        top_bottom_padded_matrix = []
-        
-        top_bottom_padded_matrix.append(top_padding)
-        for row in matrix:
-            top_bottom_padded_matrix.append(row)
-        top_bottom_padded_matrix.append(bottom_padding)
-        
-        resulting_matrix = []
-        
-        for row in top_bottom_padded_matrix:
-            side_padded_row = [row[0]] + row + [row[-1]]
-            resulting_matrix.append(side_padded_row)
-    
-        return resulting_matrix
+    def get_highpass_filtered_image(self, filter: int = 1) -> Image:
+        """
+        Returns a laplacian transformed version of the image
 
-    def get_unsharped_image(self):
+        Parameters
+        ----------
+        filter : int
+            Used to determine which of the available filters to use
+
+        Returns
+        -------
+        Image
+            Laplacian transformed image
+        """
+        
+        # check which filter to use 
+        match filter:
+            case 1:
+                filter_used = [0, 1, 0,
+                               1,-4, 1,
+                               0, 1, 0] # First filter where the center value is negative 4
+            case 2: 
+                filter_used = [ 0,-1, 0,
+                               -1, 4,-1,
+                                0,-1, 0] # Second filter. Positive counterpart to the first one
+            case 3: 
+                filter_used = [1, 1, 1,
+                               1,-8, 1,
+                               1, 1, 1] # Third filter where the center value is negative 8
+            case 4: 
+                filter_used = [-1,-1,-1,
+                               -1, 8,-1,
+                               -1,-1,-1] # Fourth filter. Positive counterpart to the first one
+            case _:
+                filter_used = [0, 1, 0,
+                               1,-4, 1,
+                               0, 1, 0] # Default filter: first filter
+
+
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+        
+        filtered_image = [] # stores the calculated values of the average-filtered image
+        
+        for y in range(height):
+            for x in range(width):
+                neighbors = self.get_neighbors((x, y))  # using default 3x3 mask
+                filtered_image.append(sum([neighbors[i] * filter_used[i] for i in range(len(filter_used))]))
+
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(filtered_image)
+        
+        return disp_img
+
+    def get_unsharp_masked_image(self) -> Image:
         """
         Unsharps (sharpens) an image using the formula 
         Unsharped_image = Grayscale_image + * (Grayscale_image - average_filtered_image())
 
-        Returns:
-            Image: Image of the Unsharped image
+        Returns
+        -------
+        Image
+            The Unsharped image
         """
         if self.grayscale_image_data == None:
-            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
+            self.process_grayscale_image_data()
         
-        filtered_image = self.grayscale_image_data
-        average_filtered_image = self.get_averaging_filter(radius=2)[1] # get the average filtered image data 
-        mask = [] # stores in a list all the grayscale - average_filtered data
-        
-        for i in range(len(average_filtered_image)):
-            mask.append(filtered_image[i] - average_filtered_image[i]) # get the mask
-        
-        unsharped_image = [] # store the unsharped image data
+        blurred_image = list(self.get_average_filtered_image().getdata())
+        original_image = self.grayscale_image_data
+        # mask is subtracting the blurred image from the original image
+        mask = [original_image[i] - blurred_image[i] for i in range(len(original_image))]
         
         k = 1 # for unsharp masking
-        
-        for i in range(len(filtered_image)):
-            unsharped_image.append(filtered_image[i] + k * mask[i]) # apply the mask on all pixels
+        unsharped_image = [original_image[i] + k * mask[i] for i in range(len(original_image))] # apply the mask on all pixels
         
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
@@ -884,26 +778,25 @@ class PcxImage:
         
         return disp_img
     
-    def get_highboost_filtered_image(self, A):
+    def get_highboost_filtered_image(self, A: int = 1) -> Image:
         """
         returns a highboost filtered version of the image using the formula:
         highboosted_image = (A-1)Original + Highpass(1) where A is the intensity
 
-        Args:
-            A (integer): determines the intensity of the highboost filter to be applied
+        Parameters
+        ----------
+        A : int
+            determines the intensity of the highboost filter to be applied
 
-        Returns:
-            Image: highboost filtered version of the image
+        Returns
+        -------
+        Image
+            highboost filtered version of the image
         """
-        if self.grayscale_image_data == None:
-            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
         
-        filtered_image = self.grayscale_image_data
-        highpassed_image = self.get_highpass_filter(filter=1)[1] # store the highpassed version of the image using the first filter
-        highboosted_image = [] # store the highboosted image data
-        
-        for i in range(len(filtered_image)):
-            highboosted_image.append((A-1) * filtered_image[i] + highpassed_image[i]) # apply the function for each
+        highpassed_image = list(self.get_highpass_filtered_image().getdata()) # store the highpassed version of the image using the first filter
+        original_image = self.grayscale_image_data # apply the function for each
+        highboosted_image = [(A-1) * original_image[i] + highpassed_image[i] for i in range(len(original_image))]
         
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
@@ -914,71 +807,42 @@ class PcxImage:
         
         return disp_img
     
-    def get_image_gradient(self):
-        if self.grayscale_image_data == None:
-            self.process_grayscale_image_data() # uses the grayscale-filtered version of the image
+    def get_image_gradient(self) -> Image:
+        """
+        Returns an image processed with Sobel operator
 
-        filtered_image = self.grayscale_image_data
+        Returns
+        -------
+        Image
+            image processed with sobel operator
+        """
+        
+        sobel_operator_x = [-1, 0, 1, 
+                            -2, 0, 2, 
+                            -1, 0, 1]
+        sobel_operator_y = [-1,-2,-1,
+                             0, 0, 0, 
+                             1, 2, 1]
+
+
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
-        two_d_list = []
         
-        for x in range(0, len(filtered_image), width):
-            two_d_list.append(filtered_image[x: x + width])
+        x_gradient = [] # stores the calculated values of the x gradient
+        y_gradient = [] # stores the calculated values of the y gradient
         
-        padded_two_d_list = self.pad_frame_once(matrix=two_d_list, pad=0)
+        for y in range(height):
+            for x in range(width):
+                neighbors = self.get_neighbors((x, y))  # using default 3x3 mask
+                x_gradient.append(sum([neighbors[i] * sobel_operator_x[i] for i in range(len(sobel_operator_x))]))
+                y_gradient.append(sum([neighbors[i] * sobel_operator_y[i] for i in range(len(sobel_operator_y))]))
 
-        gradient_values = []
-        
-        for row in range(1, height+1):
-            for col in range(1, width+1):
-                gradient_values.append(math.sqrt(self.get_x_gradient(row, col, padded_two_d_list)**2 + self.get_y_gradient(row, col, padded_two_d_list)**2))
-        
         disp_img = Image.new('L', (width, height))
-        disp_img.putdata(gradient_values)
+        disp_img.putdata([abs(x_gradient[i]) + abs(y_gradient[i]) for i in range(len(x_gradient))])
+        # disp_img.putdata([(x_gradient[i] ** 2 + y_gradient[i] ** 2) ** 0.5 for i in range(len(x_gradient))])
         
-        return disp_img
-        
-    def get_x_gradient(self, row, col, matrix):
-        x_direction_kernel = [1, 0, -1, 2, 0, -2, 1, 0, -1]
-        
-        neighbors = []  # Define relative positions for neighbors according to the radius
-        for y in range(row-1, row+2):
-            for x in range(col-1, col+2):
-                neighbors.append((y,x))
-        
-        neighbour_list = []
-        for r, c in neighbors:
-            neighbour_list.append(matrix[r][c])
-        
-        values = []
-        for i in range(len(neighbour_list)):
-            values.append(neighbour_list[i] * x_direction_kernel[i])
-    
-        value = sum(values)
-        
-        return value
-    
-    def get_y_gradient(self, row, col, matrix):
-        y_direction_kernel = [-1, -2, -1, 0, 0, 0, 1, 2, 1]
-        
-        neighbors = []  # Define relative positions for neighbors according to the radius
-        for y in range(row-1, row+2):
-            for x in range(col-1, col+2):
-                neighbors.append((y,x))
-        
-        neighbour_list = []
-        for r, c in neighbors:
-            neighbour_list.append(matrix[r][c])
-        
-        values = []
-        for i in range(len(neighbour_list)):
-            values.append(neighbour_list[i] * y_direction_kernel[i])
-    
-        value = sum(values)
-        
-        return value          
+        return disp_img    
     
 if __name__ == '__main__':
 

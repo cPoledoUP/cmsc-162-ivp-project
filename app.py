@@ -367,7 +367,7 @@ class OutputFrame(tk.LabelFrame):
                 self.hist_data = pcx_image.get_color_channels()['blue']
             case 'GREY':
                 image = pcx_image.get_grayscale_image()
-                label = 'Grayscale Image'
+                label = 'Grayscale Image\ns=(R+G+B)/3'
                 self.hist_data = list(image.getdata())
             case 'NEG':
                 image = pcx_image.get_negative_image()

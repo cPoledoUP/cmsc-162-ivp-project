@@ -411,7 +411,7 @@ class OutputFrame(tk.LabelFrame):
                 self.hist_data = list(image.getdata())
             case 'EDGE':
                 sobel_labels = {
-                    1: 'combined',
+                    1: 'xy',
                     2: 'x',
                     3: 'y'
                 }
@@ -570,7 +570,7 @@ class ToolBar(tk.Frame):
         self.averaging_filter_button.grid(row=7, column=0, padx=2)
         self.median_filter_button = tk.Button(self, text='MED',width=7, height= 1)
         self.median_filter_button.grid(row=7, column=1, padx=2)
-        self.highpass_filter_button = tk.Button(self, text='HI',width=7, height= 1)
+        self.highpass_filter_button = tk.Button(self, text='HIPASS',width=7, height= 1)
         self.highpass_filter_button.grid(row=7, column=2, padx=2)
         self.unsharp_masking_button = tk.Button(self, text='UNSHARP',width=7, height= 1)
         self.unsharp_masking_button.grid(row=8, column=0, padx=2)
@@ -674,7 +674,7 @@ class ToolBar(tk.Frame):
                 if input_val != None:
                     self.parent.parent.output_frame.display_transformed_image(pcx_image, 'HIBOOST', input_val)
             case 'EDGE':
-                input_val = simpledialog.askfloat('Gradient', 'Enter gradient to process\n[1] combined\n[2] x\n[3] y', initialvalue=1, minvalue=1, maxvalue=3)
+                input_val = simpledialog.askfloat('Gradient', 'Enter gradient to process\n[1] xy\n[2] x\n[3] y', initialvalue=1, minvalue=1, maxvalue=3)
                 if input_val != None:
                     self.parent.parent.output_frame.display_transformed_image(pcx_image, 'EDGE', input_val)
             

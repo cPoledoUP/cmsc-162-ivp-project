@@ -791,7 +791,7 @@ class PcxImage:
             highboost filtered version of the image
         """
         
-        highpassed_image = list(self.get_highpass_filtered_image().getdata()) # store the highpassed version of the image using the first filter
+        highpassed_image = list(self.get_highpass_filtered_image(2).getdata()) # store the highpassed version of the image using the second filter
         original_image = self.grayscale_image_data # apply the function for each
         highboosted_image = [(A-1) * original_image[i] + highpassed_image[i] for i in range(len(original_image))]
         
@@ -855,7 +855,7 @@ class PcxImage:
         
         return disp_img    
     
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    img = PcxImage('1.pcx')
-    img.get_image_gradient().show()
+#     img = PcxImage('1.pcx')
+#     img.get_highboost_filtered_image(2).show()

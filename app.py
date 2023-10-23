@@ -130,6 +130,7 @@ class App(tk.Tk):
         self.menu_bar.editmenu.entryconfig(12, command=self.main.image_metadata.tool_bar.unsharp_masking_button.invoke)
         self.menu_bar.editmenu.entryconfig(13, command=self.main.image_metadata.tool_bar.highboost_filter_button.invoke)
         self.menu_bar.editmenu.entryconfig(14, command=self.main.image_metadata.tool_bar.gradient_filter_button.invoke)
+        self.menu_bar.editmenu.entryconfig(16, command=self.main.output_frame.show_histogram)
     
     def on_key_release(self, event):
         """
@@ -162,6 +163,8 @@ class App(tk.Tk):
                     self.main.image_metadata.tool_bar.highboost_filter_button.invoke()  # highboost filter button
                 case '6':
                     self.main.image_metadata.tool_bar.gradient_filter_button.invoke()   # gradient filter button
+                case 'h' | 'H':
+                    self.menu_bar.editmenu.invoke(16)
         else:
             match event.keysym:
                 case 'F1':
@@ -222,6 +225,8 @@ class Menubar(tk.Menu):
         self.editmenu.add_command(label="Unsharp Masking (Ctrl+4)", command=self.do_nothing)
         self.editmenu.add_command(label="Highboost Filtering (Ctrl+5)", command=self.do_nothing)
         self.editmenu.add_command(label="Gradient (Ctrl+6)", command=self.do_nothing)
+        self.editmenu.add_separator()
+        self.editmenu.add_command(label="Show Histogram (Ctrl+H)", command=self.do_nothing, state=tk.DISABLED)
         self.add_cascade(label="Edit", menu=self.editmenu, state=tk.DISABLED)
 
         # helpmenu = tk.Menu(self)
@@ -315,34 +320,16 @@ class OutputFrame(tk.LabelFrame):
         self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)
         self.label = tk.Label(self)
         self.label.pack()
+        self.hist_data = None
         self.canvas = None
         self.max_width = 500
         self.max_height = 240
         self.configure(relief="flat")
 
-    def display_channel(self, pcx_image, color: str):
+    def show_histogram(self):
         """
-        Display the image and color channel in the frame
+        Display the histogram of transformed image
         """
-
-        image = pcx_image.show_color_channel_images(color)
-        color_frequency = pcx_image.get_color_channels()[color]
-        
-        # resize image first to fit frame
-        if float(image.size[0])/float(image.size[1]) > self.max_width/self.max_height:
-            wpercent = self.max_width/float(image.size[0])
-            hsize = int((float(image.size[1])*float(wpercent)))
-            new_img = image.resize((self.max_width, hsize))
-        else:
-            hpercent = self.max_height/float(image.size[1])
-            wsize = int((float(image.size[0])*float(hpercent)))
-            new_img = image.resize((wsize, self.max_height))
-
-        # put image in the img_container
-        self.configure(labelanchor='n', text=f"{color.capitalize()} Channel", font=('Helvetica Bold', 20))
-        new_img = ImageTk.PhotoImage(new_img)
-        self.label['image'] = new_img
-        self.label.image = new_img
 
         # remove existing histogram
         if self.canvas != None:
@@ -350,11 +337,12 @@ class OutputFrame(tk.LabelFrame):
             
         # histogram for the color channel        
         fig, ax = plt.subplots(figsize = (5, 3))
-        ax.hist(color_frequency, bins=256)
+        ax.hist(self.hist_data, bins=256)
 
         self.canvas = FigureCanvasTkAgg(fig, 
                                master = self)
         self.canvas.get_tk_widget().pack(padx=20, pady=20)
+        plt.close()
         
     def display_transformed_image(self, pcx_image: PcxImage, mode, *args):
         """
@@ -365,36 +353,58 @@ class OutputFrame(tk.LabelFrame):
         self.remove_image()
         
         match mode:
+            case 'RED':
+                image = pcx_image.show_color_channel_images('red')
+                label = 'Red Color Channel'
+                self.hist_data = pcx_image.get_color_channels()['red']
+            case 'GREEN':
+                image = pcx_image.show_color_channel_images('green')
+                label = 'Green Color Channel'
+                self.hist_data = pcx_image.get_color_channels()['green']
+            case 'BLUE':
+                image = pcx_image.show_color_channel_images('blue')
+                label = 'Blue Color Channel'
+                self.hist_data = pcx_image.get_color_channels()['blue']
             case 'GREY':
                 image = pcx_image.get_grayscale_image()
                 label = 'Grayscale Image'
+                self.hist_data = list(image.getdata())
             case 'NEG':
                 image = pcx_image.get_negative_image()
                 label = 'Negative Image'
+                self.hist_data = list(image.getdata())
             case 'B/W':
                 image = pcx_image.get_black_and_white_image(args[0])
                 label = 'Black and White Image'
+                self.hist_data = list(image.getdata())
             case 'GAMMA':
                 image = pcx_image.get_gamma_transformed_image(args[0])
                 label = 'Gamma Transformed Image'
+                self.hist_data = list(image.getdata())
             case 'AVE':
                 image = pcx_image.get_average_filtered_image(args[0])
                 label = 'Averaging Filter (3x3)'
+                self.hist_data = list(image.getdata())
             case 'MED':
                 image = pcx_image.get_median_filtered_image(args[0])
                 label = 'Median Filter (3x3)'
+                self.hist_data = list(image.getdata())
             case 'HI':
                 image = pcx_image.get_highpass_filtered_image(args[0])
                 label = 'Highpass Filtering (Laplacian Operator)\n| 0  1  0 |\n| 1 -4  1 |\n| 0  1  0 |'
+                self.hist_data = list(image.getdata())
             case 'UNSHARP':
                 image = pcx_image.get_unsharp_masked_image()
                 label = 'Unsharp Masking'
+                self.hist_data = list(image.getdata())
             case 'HIBOOST':
                 image = pcx_image.get_highboost_filtered_image(args[0])
                 label = 'Highboost Filtering (A=2)'
+                self.hist_data = list(image.getdata())
             case 'EDGE':
                 image = pcx_image.get_image_gradient()
                 label = 'Gradient (Sobel Operator)'
+                self.hist_data = list(image.getdata())
         
         # display the image 
         # resize image first to fit frame
@@ -413,6 +423,8 @@ class OutputFrame(tk.LabelFrame):
         self.label['image'] = new_img
         self.label.image = new_img
 
+        self.parent.parent.menu_bar.editmenu.entryconfig(16, state=tk.NORMAL)
+
     def remove_image(self):
         """
         Remove the image in the frame
@@ -421,8 +433,10 @@ class OutputFrame(tk.LabelFrame):
         self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
         self.label['image'] = None
         self.label.image = None
+        self.hist_data = None
         if self.canvas != None:
             self.canvas.get_tk_widget().pack_forget()
+        self.parent.parent.menu_bar.editmenu.entryconfig(16, state=tk.DISABLED)
 
 class MetaDataFrame (tk.Frame):
     """
@@ -567,9 +581,9 @@ class ToolBar(tk.Frame):
         self.bw_slider['state'] = 'normal'
 
     def enable_toolbar(self, pcx_image):
-        self.red_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'red'), self.disable_slider()], state=tk.NORMAL)
-        self.green_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'green'), self.disable_slider()], state=tk.NORMAL)
-        self.blue_button.configure(command=lambda: [self.parent.parent.output_frame.display_channel(pcx_image, 'blue'), self.disable_slider()], state=tk.NORMAL)
+        self.red_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'RED'), self.disable_slider()], state=tk.NORMAL)
+        self.green_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'GREEN'), self.disable_slider()], state=tk.NORMAL)
+        self.blue_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'BLUE'), self.disable_slider()], state=tk.NORMAL)
         self.grey_scale_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'GREY'), self.disable_slider()], state=tk.NORMAL)
         self.negative_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'NEG'), self.disable_slider()], state=tk.NORMAL)
         self.gamma_button.configure(command= lambda: [self.check_entrybox(pcx_image),self.disable_slider()],state=tk.NORMAL)

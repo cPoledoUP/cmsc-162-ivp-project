@@ -47,10 +47,20 @@ class App(tk.Tk):
         # add widgets
         self.menu_bar = Menubar(self)
         self.main = Main(self)
+
+        # setup app
+        self.setup_menu_buttons()
+        self.bind_all('<KeyRelease>', self.on_key_release)
+
         # run the app
         self.mainloop()
+
         
     def menu_open(self):
+        """
+        Opens a pcx file
+        """
+
         # ftypes = [('pcx file', ['*.pcx']), ('image files', ['*.jpg', '*.png', '*.tiff', '*.ppm', '*.gif', '*.bmp'])]
         ftypes = [('pcx file', ['*.pcx'])]
 
@@ -69,6 +79,7 @@ class App(tk.Tk):
             self.main.image_metadata.tool_bar.enable_toolbar(pcx_image)
             self.main.image_frame.display_image(self.image)
             file.close()
+            self.menu_bar.entryconfig(2, state=tk.NORMAL)
         except FileNotFoundError:
             pass
         except Exception as e:
@@ -80,6 +91,10 @@ class App(tk.Tk):
         
         
     def menu_close(self):
+        """
+        Closes current image in app
+        """
+        self.menu_bar.entryconfig(2, state=tk.DISABLED)
         self.main.image_frame.remove_image()
         self.main.output_frame.remove_image()
         self.main.image_metadata.palette_frame.remove_palette()
@@ -88,10 +103,76 @@ class App(tk.Tk):
         self.main.image_metadata.tool_bar.disable_slider()
     
     def quit_app(self):
+        """
+        Exit the app
+        """
+        
         print("Exiting app...")
         self.quit()
         self.destroy()
         print("Exited successfully.")
+
+    def setup_menu_buttons(self):
+        """
+        Make menu buttons functional
+        """
+
+        self.menu_bar.editmenu.entryconfig(0, command=self.main.image_metadata.tool_bar.red_button.invoke)
+        self.menu_bar.editmenu.entryconfig(1, command=self.main.image_metadata.tool_bar.green_button.invoke)
+        self.menu_bar.editmenu.entryconfig(2, command=self.main.image_metadata.tool_bar.blue_button.invoke)
+        self.menu_bar.editmenu.entryconfig(4, command=self.main.image_metadata.tool_bar.grey_scale_button.invoke)
+        self.menu_bar.editmenu.entryconfig(5, command=self.main.image_metadata.tool_bar.negative_button.invoke)
+        self.menu_bar.editmenu.entryconfig(6, command=self.main.image_metadata.tool_bar.bw_button.invoke)
+        self.menu_bar.editmenu.entryconfig(7, command=self.main.image_metadata.tool_bar.gamma_button.invoke)
+        self.menu_bar.editmenu.entryconfig(9, command=self.main.image_metadata.tool_bar.averaging_filter_button.invoke)
+        self.menu_bar.editmenu.entryconfig(10, command=self.main.image_metadata.tool_bar.median_filter_button.invoke)
+        self.menu_bar.editmenu.entryconfig(11, command=self.main.image_metadata.tool_bar.highpass_filter_button.invoke)
+        self.menu_bar.editmenu.entryconfig(12, command=self.main.image_metadata.tool_bar.unsharp_masking_button.invoke)
+        self.menu_bar.editmenu.entryconfig(13, command=self.main.image_metadata.tool_bar.highboost_filter_button.invoke)
+        self.menu_bar.editmenu.entryconfig(14, command=self.main.image_metadata.tool_bar.gradient_filter_button.invoke)
+    
+    def on_key_release(self, event):
+        """
+        Called on keyboard key release for keyboard shortcuts
+        """
+        
+        if event.state == 4:  # keypress with Ctrl
+            match event.keysym:
+                case 'o' | 'O':
+                    self.menu_bar.filebutton.invoke(0)  # open image
+                case 'c'| 'C':
+                    self.menu_bar.filebutton.invoke(1)  # close image
+                case 'q'| 'Q':
+                    self.menu_bar.filebutton.invoke(3)  # quit app
+                case 'r' | 'R':
+                    self.main.image_metadata.tool_bar.red_button.invoke()  # red button
+                case 'g' | 'G':
+                    self.main.image_metadata.tool_bar.green_button.invoke()  # green button
+                case 'b' | 'B':
+                    self.main.image_metadata.tool_bar.blue_button.invoke()  # blue button
+                case '1':
+                    self.main.image_metadata.tool_bar.averaging_filter_button.invoke()  # averaging filter button
+                case '2':
+                    self.main.image_metadata.tool_bar.median_filter_button.invoke() # median filter button
+                case '3':
+                    self.main.image_metadata.tool_bar.highpass_filter_button.invoke()   # highpass filter button
+                case '4':
+                    self.main.image_metadata.tool_bar.unsharp_masking_button.invoke()   # unsharp masking button
+                case '5':
+                    self.main.image_metadata.tool_bar.highboost_filter_button.invoke()  # highboost filter button
+                case '6':
+                    self.main.image_metadata.tool_bar.gradient_filter_button.invoke()   # gradient filter button
+        else:
+            match event.keysym:
+                case 'F1':
+                    self.main.image_metadata.tool_bar.grey_scale_button.invoke()    # grayscale button
+                case 'F2':
+                    self.main.image_metadata.tool_bar.negative_button.invoke()    # negative button
+                case 'F3':
+                    self.main.image_metadata.tool_bar.bw_button.invoke()    # black and white button
+                case 'F4':
+                    self.main.image_metadata.tool_bar.gamma_button.invoke()    # gamma button
+
         
 class Menubar(tk.Menu):
     """
@@ -108,33 +189,51 @@ class Menubar(tk.Menu):
 
         
         # create the menu buttons
-        filebutton = tk.Menu(self)
-        filebutton.add_command(label="New", command=self.do_nothing)
-        filebutton.add_command(label="Open", command=parent.menu_open)
-        filebutton.add_command(label="Save", command=self.do_nothing)
-        filebutton.add_command(label="Save as...", command=self.do_nothing)
-        filebutton.add_command(label="Close", command=parent.menu_close)
-        filebutton.add_separator()
-        filebutton.add_command(label="Exit", command=parent.quit_app)
-        self.add_cascade(label="File", menu=filebutton)
+        self.filebutton = tk.Menu(self)
+        # filebutton.add_command(label="New", command=self.do_nothing)
+        self.filebutton.add_command(label="Open (Ctrl+O)", command=parent.menu_open)
+        # filebutton.add_command(label="Save", command=self.do_nothing)
+        # filebutton.add_command(label="Save as...", command=self.do_nothing)
+        self.filebutton.add_command(label="Close (Ctrl+C)", command=parent.menu_close)
+        self.filebutton.add_separator()
+        self.filebutton.add_command(label="Exit (Ctrl+Q)", command=parent.quit_app)
+        self.add_cascade(label="File", menu=self.filebutton)
 
         self.editmenu = tk.Menu(self)
-        self.editmenu.add_command(label="Undo", command=self.do_nothing)
+        # self.editmenu.add_command(label="Undo", command=self.do_nothing)
+        # self.editmenu.add_separator()
+        # self.editmenu.add_command(label="Cut", command=self.do_nothing)
+        # self.editmenu.add_command(label="Copy", command=self.do_nothing)
+        # self.editmenu.add_command(label="Paste", command=self.do_nothing)
+        # self.editmenu.add_command(label="Delete", command=self.do_nothing)
+        # self.editmenu.add_command(label="Select All", command=self.do_nothing)
+        self.editmenu.add_command(label="Red Channel (Ctrl+R)", command=self.do_nothing)
+        self.editmenu.add_command(label="Green Channel (Ctrl+G)", command=self.do_nothing)
+        self.editmenu.add_command(label="Blue Channel (Ctrl+B)", command=self.do_nothing)
         self.editmenu.add_separator()
-        self.editmenu.add_command(label="Cut", command=self.do_nothing)
-        self.editmenu.add_command(label="Copy", command=self.do_nothing)
-        self.editmenu.add_command(label="Paste", command=self.do_nothing)
-        self.editmenu.add_command(label="Delete", command=self.do_nothing)
-        self.editmenu.add_command(label="Select All", command=self.do_nothing)
-        self.add_cascade(label="Edit", menu=self.editmenu)
+        self.editmenu.add_command(label="Grayscale (F1)", command=self.do_nothing)
+        self.editmenu.add_command(label="Negative (F2)", command=self.do_nothing)
+        self.editmenu.add_command(label="Black and White (F3)", command=self.do_nothing)
+        self.editmenu.add_command(label="Gamma Transform (F4)", command=self.do_nothing)
+        self.editmenu.add_separator()
+        self.editmenu.add_command(label="Averaging Filter (Ctrl+1)", command=self.do_nothing)
+        self.editmenu.add_command(label="Median Filter (Ctrl+2)", command=self.do_nothing)
+        self.editmenu.add_command(label="Highpass Filtering (Ctrl+3)", command=self.do_nothing)
+        self.editmenu.add_command(label="Unsharp Masking (Ctrl+4)", command=self.do_nothing)
+        self.editmenu.add_command(label="Highboost Filtering (Ctrl+5)", command=self.do_nothing)
+        self.editmenu.add_command(label="Gradient (Ctrl+6)", command=self.do_nothing)
+        self.add_cascade(label="Edit", menu=self.editmenu, state=tk.DISABLED)
 
-        helpmenu = tk.Menu(self)
-        helpmenu.add_command(label="Help Index", command=self.do_nothing)
-        helpmenu.add_command(label="About...", command=self.do_nothing)
-        self.add_cascade(label="Help", menu=helpmenu)
+        # helpmenu = tk.Menu(self)
+        # helpmenu.add_command(label="Help Index", command=self.do_nothing)
+        self.add_command(label="About...", command=self.show_info)
+        # self.add_cascade(label="Help", menu=helpmenu)
             
     def do_nothing(self):
         messagebox.showerror('Error!', 'This feature is not yet implemented!')
+    
+    def show_info(self):
+        messagebox.showinfo("About", "Made for CMSC 162 Introduction to Image and Video Processing\n\nAuthors:\nClent Japhet Poledo\nFrancis Albert Celeste")
 
 class Main(ttk.Frame):
     """
@@ -166,7 +265,7 @@ class ImageFrame(tk.LabelFrame):
         # initialize
         super().__init__(parent)
         self.parent = parent
-        self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)
+        self.pack(side = tk.LEFT, expand=False, padx=100, pady=10)
         self.label = tk.Label(self)
         self.label.pack()
         self.max_width = 500
@@ -174,6 +273,9 @@ class ImageFrame(tk.LabelFrame):
         self.configure(relief="flat")
 
     def display_image(self, image):
+        """
+        Display the image in the frame
+        """
 
         # resize image first to fit frame
         if float(image.size[0])/float(image.size[1]) > self.max_width/self.max_height:
@@ -192,6 +294,10 @@ class ImageFrame(tk.LabelFrame):
         self.label.image = new_img
         
     def remove_image(self):
+        """
+        Remove the image in the frame
+        """
+
         self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
         self.label['image'] = None
         self.label.image = None
@@ -215,6 +321,10 @@ class OutputFrame(tk.LabelFrame):
         self.configure(relief="flat")
 
     def display_channel(self, pcx_image, color: str):
+        """
+        Display the image and color channel in the frame
+        """
+
         image = pcx_image.show_color_channel_images(color)
         color_frequency = pcx_image.get_color_channels()[color]
         
@@ -247,6 +357,10 @@ class OutputFrame(tk.LabelFrame):
         self.canvas.get_tk_widget().pack(padx=20, pady=20)
         
     def display_transformed_image(self, pcx_image: PcxImage, mode, *args):
+        """
+        Display the transformed image in the frame
+        """
+
         # remove existing image in frame first
         self.remove_image()
         
@@ -265,22 +379,22 @@ class OutputFrame(tk.LabelFrame):
                 label = 'Gamma Transformed Image'
             case 'AVE':
                 image = pcx_image.get_average_filtered_image(args[0])
-                label = 'Average Filtered Image'
+                label = 'Averaging Filter (3x3)'
             case 'MED':
                 image = pcx_image.get_median_filtered_image(args[0])
-                label = 'Median Filtered Image'
+                label = 'Median Filter (3x3)'
             case 'HI':
                 image = pcx_image.get_highpass_filtered_image(args[0])
-                label = 'Highpass Filtered Image'
+                label = 'Highpass Filtering (Laplacian Operator)\n| 0  1  0 |\n| 1 -4  1 |\n| 0  1  0 |'
             case 'UNSHARP':
                 image = pcx_image.get_unsharp_masked_image()
-                label = 'Unsharp Masking Filtered Image'
+                label = 'Unsharp Masking'
             case 'HIBOOST':
                 image = pcx_image.get_highboost_filtered_image(args[0])
-                label = 'Highboost Filtered Image'
+                label = 'Highboost Filtering (A=2)'
             case 'EDGE':
                 image = pcx_image.get_image_gradient()
-                label = 'Sobel Operated Image Gradient'
+                label = 'Gradient (Sobel Operator)'
         
         # display the image 
         # resize image first to fit frame
@@ -300,6 +414,10 @@ class OutputFrame(tk.LabelFrame):
         self.label.image = new_img
 
     def remove_image(self):
+        """
+        Remove the image in the frame
+        """
+
         self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
         self.label['image'] = None
         self.label.image = None

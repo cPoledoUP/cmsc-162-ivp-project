@@ -7,7 +7,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 from tkinter.filedialog import askopenfilename
 from PIL import ImageTk
 from pcx_viewer import *
@@ -383,11 +383,13 @@ class OutputFrame(tk.LabelFrame):
                 self.hist_data = list(image.getdata())
             case 'AVE':
                 image = pcx_image.get_average_filtered_image(args[0])
-                label = 'Averaging Filter (3x3)'
+                side_dimension = args[0] * 2 + 1
+                label = f"Averaging Filter ({side_dimension}x{side_dimension})"
                 self.hist_data = list(image.getdata())
             case 'MED':
                 image = pcx_image.get_median_filtered_image(args[0])
-                label = 'Median Filter (3x3)'
+                side_dimension = args[0] * 2 + 1
+                label = f"Median Filter ({side_dimension}x{side_dimension})"
                 self.hist_data = list(image.getdata())
             case 'HI':
                 image = pcx_image.get_highpass_filtered_image(args[0])
@@ -399,7 +401,7 @@ class OutputFrame(tk.LabelFrame):
                 self.hist_data = list(image.getdata())
             case 'HIBOOST':
                 image = pcx_image.get_highboost_filtered_image(args[0])
-                label = 'Highboost Filtering (A=2)'
+                label = f"Highboost Filtering (A={args[0]})"
                 self.hist_data = list(image.getdata())
             case 'EDGE':
                 image = pcx_image.get_image_gradient()
@@ -590,11 +592,11 @@ class ToolBar(tk.Frame):
         self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'B/W', self.bw_slider.get()), self.enable_slider()] ,state=tk.NORMAL)
         self.gamma_input.configure(state=tk.NORMAL)
         self.gamma_input.insert(0, '1')
-        self.averaging_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'AVE', 1), self.disable_slider()], state=tk.NORMAL)
-        self.median_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'MED', 1), self.disable_slider()], state=tk.NORMAL)
+        self.averaging_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'AVE'), self.disable_slider()], state=tk.NORMAL)
+        self.median_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'MED'), self.disable_slider()], state=tk.NORMAL)
         self.highpass_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'HI', 1), self.disable_slider()], state=tk.NORMAL)
         self.unsharp_masking_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'UNSHARP'), self.disable_slider()], state=tk.NORMAL)
-        self.highboost_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'HIBOOST', 2), self.disable_slider()], state=tk.NORMAL)
+        self.highboost_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'HIBOOST'), self.disable_slider()], state=tk.NORMAL)
         self.gradient_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'EDGE'), self.disable_slider()], state=tk.NORMAL)
 
     def disable_slider(self):
@@ -637,6 +639,21 @@ class ToolBar(tk.Frame):
                 self.parent.parent.output_frame.display_transformed_image(pcx_image, 'GAMMA', float(input))
         else:
             messagebox.showerror('Error!', 'Invalid gamma value.')
+    
+    def show_ask_popup(self, pcx_image, mode):
+        match mode:
+            case 'AVE':
+                input_val = simpledialog.askinteger('Averaging Filter', 'Enter side radius of desired mask (e.g., 1 for 3x3, 2 for 5x5)', initialvalue=1, minvalue=1, maxvalue=5)
+                if input_val != None:
+                    self.parent.parent.output_frame.display_transformed_image(pcx_image, 'AVE', input_val)
+            case 'MED':
+                input_val = simpledialog.askinteger('Median Filter', 'Enter side radius of desired mask (e.g., 1 for 3x3, 2 for 5x5)', initialvalue=1, minvalue=1, maxvalue=5)
+                if input_val != None:
+                    self.parent.parent.output_frame.display_transformed_image(pcx_image, 'MED', input_val)
+            case 'HIBOOST':
+                input_val = simpledialog.askinteger('Highboost Filter', 'Enter side radius of desired "A" value', initialvalue=2, minvalue=1)
+                if input_val != None:
+                    self.parent.parent.output_frame.display_transformed_image(pcx_image, 'HIBOOST', input_val)
             
             
 class MetaData (tk.Text):

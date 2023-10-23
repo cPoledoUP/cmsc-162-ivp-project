@@ -748,7 +748,7 @@ class PcxImage:
     def get_unsharp_masked_image(self) -> Image:
         """
         Unsharps (sharpens) an image using the formula 
-        Unsharped_image = Grayscale_image + * (Grayscale_image - average_filtered_image())
+        Unsharped_image = Grayscale_image + k * (Grayscale_image - average_filtered_image())
 
         Returns
         -------

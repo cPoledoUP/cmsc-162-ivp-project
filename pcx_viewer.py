@@ -572,8 +572,8 @@ class PcxImage:
         height = dimensions[3] - dimensions[1] + 1
 
         for pixel in self.grayscale_image_data:
-            c = 1   # based on slides
-            gamma_image_data.append(c * (pixel ** gamma))
+            c = 255   # scaling constant
+            gamma_image_data.append(c * ((pixel/c) ** gamma))
         
         disp_img = Image.new('L', (width, height))
         disp_img.putdata(gamma_image_data)

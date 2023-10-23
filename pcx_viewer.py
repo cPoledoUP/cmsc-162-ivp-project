@@ -775,14 +775,14 @@ class PcxImage:
         
         return disp_img
     
-    def get_highboost_filtered_image(self, A: int = 1) -> Image:
+    def get_highboost_filtered_image(self, A: float = 1) -> Image:
         """
         returns a highboost filtered version of the image using the formula:
         highboosted_image = (A-1)Original + Highpass(1) where A is the intensity
 
         Parameters
         ----------
-        A : int
+        A : float
             determines the intensity of the highboost filter to be applied
 
         Returns
@@ -804,9 +804,14 @@ class PcxImage:
         
         return disp_img
     
-    def get_image_gradient(self) -> Image:
+    def get_image_gradient(self, mode: int = 1) -> Image:
         """
         Returns an image processed with Sobel operator
+
+        Parameters
+        ----------
+        mode : int
+            1 for combined, 2 for x, 3 for y
 
         Returns
         -------
@@ -832,11 +837,20 @@ class PcxImage:
         for y in range(height):
             for x in range(width):
                 neighbors = self.get_neighbors((x, y))  # using default 3x3 mask
-                x_gradient.append(sum([neighbors[i] * sobel_operator_x[i] for i in range(len(sobel_operator_x))]))
-                y_gradient.append(sum([neighbors[i] * sobel_operator_y[i] for i in range(len(sobel_operator_y))]))
+                if mode != 3:
+                    x_gradient.append(sum([neighbors[i] * sobel_operator_x[i] for i in range(len(sobel_operator_x))]))
+                if mode != 2:
+                    y_gradient.append(sum([neighbors[i] * sobel_operator_y[i] for i in range(len(sobel_operator_y))]))
+        
+        if mode == 2:
+            gradient_data = x_gradient
+        elif mode == 3:
+            gradient_data = y_gradient
+        else:
+            gradient_data = [abs(x_gradient[i]) + abs(y_gradient[i]) for i in range(len(x_gradient))]
 
         disp_img = Image.new('L', (width, height))
-        disp_img.putdata([abs(x_gradient[i]) + abs(y_gradient[i]) for i in range(len(x_gradient))])
+        disp_img.putdata(gradient_data)
         # disp_img.putdata([(x_gradient[i] ** 2 + y_gradient[i] ** 2) ** 0.5 for i in range(len(x_gradient))])
         
         return disp_img    

@@ -392,8 +392,14 @@ class OutputFrame(tk.LabelFrame):
                 label = f"Median Filter ({side_dimension}x{side_dimension})"
                 self.hist_data = list(image.getdata())
             case 'HI':
+                laplacian_filter_labels = {
+                    1: '\n| 0  1  0 |\n| 1 -4  1 |\n| 0  1  0 |',
+                    2: '\n| 0 -1  0 |\n|-1  4 -1 |\n| 0 -1  0 |',
+                    3: '\n| 1  1  1 |\n| 1 -8  1 |\n| 1  1  1 |',
+                    4: '\n|-1 -1 -1 |\n|-1  8 -1 |\n|-1 -1 -1 |'
+                }
                 image = pcx_image.get_highpass_filtered_image(args[0])
-                label = 'Highpass Filtering (Laplacian Operator)\n| 0  1  0 |\n| 1 -4  1 |\n| 0  1  0 |'
+                label = 'Highpass Filtering (Laplacian Operator)' + laplacian_filter_labels[args[0]]
                 self.hist_data = list(image.getdata())
             case 'UNSHARP':
                 image = pcx_image.get_unsharp_masked_image()
@@ -404,8 +410,13 @@ class OutputFrame(tk.LabelFrame):
                 label = f"Highboost Filtering (A={args[0]})"
                 self.hist_data = list(image.getdata())
             case 'EDGE':
-                image = pcx_image.get_image_gradient()
-                label = 'Gradient (Sobel Operator)'
+                sobel_labels = {
+                    1: 'combined',
+                    2: 'x',
+                    3: 'y'
+                }
+                image = pcx_image.get_image_gradient(args[0])
+                label = 'Gradient (Sobel Operator)' + f"({sobel_labels[args[0]]})"
                 self.hist_data = list(image.getdata())
         
         # display the image 
@@ -594,10 +605,10 @@ class ToolBar(tk.Frame):
         self.gamma_input.insert(0, '1')
         self.averaging_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'AVE'), self.disable_slider()], state=tk.NORMAL)
         self.median_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'MED'), self.disable_slider()], state=tk.NORMAL)
-        self.highpass_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'HI', 1), self.disable_slider()], state=tk.NORMAL)
+        self.highpass_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'HI'), self.disable_slider()], state=tk.NORMAL)
         self.unsharp_masking_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'UNSHARP'), self.disable_slider()], state=tk.NORMAL)
         self.highboost_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'HIBOOST'), self.disable_slider()], state=tk.NORMAL)
-        self.gradient_filter_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'EDGE'), self.disable_slider()], state=tk.NORMAL)
+        self.gradient_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'EDGE'), self.disable_slider()], state=tk.NORMAL)
 
     def disable_slider(self):
         self.bw_slider['state'] = 'disabled'
@@ -650,10 +661,22 @@ class ToolBar(tk.Frame):
                 input_val = simpledialog.askinteger('Median Filter', 'Enter side radius of desired mask (e.g., 1 for 3x3, 2 for 5x5)', initialvalue=1, minvalue=1, maxvalue=5)
                 if input_val != None:
                     self.parent.parent.output_frame.display_transformed_image(pcx_image, 'MED', input_val)
+            case 'HI':
+                laplacian1 = '\t0\t1\t0\n\t1\t-4\t1\n\t0\t1\t0\n'
+                laplacian2 = '\t0\t-1\t0\n\t-1\t4\t-1\n\t0\t-1\t0\n'
+                laplacian3 = '\t1\t1\t1\n\t1\t-8\t1\n\t1\t1\t1\n'
+                laplacian4 = '\t-1\t-1\t-1\n\t-1\t8\t-1\n\t-1\t-1\t-1\n'
+                input_val = simpledialog.askinteger('Highpass Filter', f"Enter desired laplacian operator\n\n[1]{laplacian1}\n[2]{laplacian2}\n[3]{laplacian3}\n[4]{laplacian4}\n", initialvalue=1, minvalue=1, maxvalue=4)
+                if input_val != None:
+                    self.parent.parent.output_frame.display_transformed_image(pcx_image, 'HI', input_val)
             case 'HIBOOST':
-                input_val = simpledialog.askinteger('Highboost Filter', 'Enter side radius of desired "A" value', initialvalue=2, minvalue=1)
+                input_val = simpledialog.askfloat('Highboost Filter', 'Enter amplification (A) value', initialvalue=2, minvalue=1)
                 if input_val != None:
                     self.parent.parent.output_frame.display_transformed_image(pcx_image, 'HIBOOST', input_val)
+            case 'EDGE':
+                input_val = simpledialog.askfloat('Gradient', 'Enter gradient to process\n[1] combined\n[2] x\n[3] y', initialvalue=1, minvalue=1, maxvalue=3)
+                if input_val != None:
+                    self.parent.parent.output_frame.display_transformed_image(pcx_image, 'EDGE', input_val)
             
             
 class MetaData (tk.Text):

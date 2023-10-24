@@ -856,7 +856,8 @@ class PcxImage:
         
         return disp_img    
     
-# if __name__ == '__main__':
+if __name__ == '__main__':
 
-#     img = PcxImage('1.pcx')
-#     img.get_highboost_filtered_image(2).show()
+    img = PcxImage('wad.pcx')
+    print(img.get_n_planes())
+    # img.get_highboost_filtered_image(2).show()

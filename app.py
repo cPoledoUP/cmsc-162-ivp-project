@@ -687,13 +687,15 @@ class MetaData (tk.Text):
     def __init__(self, parent):
         #initialize
         self.parent = parent
+        self.scroll = None
         super().__init__(parent)
         self.separator = ttk.Separator(parent, orient='horizontal')
         self.remove_display()
         
     def display_all(self, image:PcxImage):
-        scroll = ttk.Scrollbar(self.parent, command=self.yview)
-        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        if self.scroll == None:
+            self.scroll = ttk.Scrollbar(self.parent, command=self.yview)
+            self.scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         header = "IMAGE METADATA:\n\n"
         all_data = (
@@ -711,13 +713,18 @@ class MetaData (tk.Text):
             f"Horizontal Screen Size: {image.get_h_screen_size()}\n"
             f"Vertical Screen Size: {image.get_v_screen_size()}"
         )
+        self.configure(state=tk.NORMAL)
+        self.delete('1.0', tk.END)
         self.insert('1.0', header + all_data)
-        self.configure(bg='#B0B0B0', font=('Helvetica', 10), padx=10, pady=10, width=25, relief='flat', state='disabled', yscrollcommand=scroll.set)
+        self.configure(bg='#B0B0B0', font=('Helvetica', 10), padx=10, pady=10, width=25, relief='flat', state='disabled', yscrollcommand=self.scroll.set)
         self.separator.pack(side= tk.BOTTOM, fill='x')
         self.pack(side = tk.BOTTOM, expand=True)
         
     def remove_display(self): 
         self.separator.pack_forget()
+        if self.scroll != None:
+            self.scroll.destroy()
+            self.scroll = None
         self.pack_forget()
 
 class PaletteFrame(tk.LabelFrame):

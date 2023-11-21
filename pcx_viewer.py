@@ -1,4 +1,5 @@
 from PIL import Image, ImageDraw
+import random
 
 class PcxImage:
 
@@ -854,10 +855,36 @@ class PcxImage:
         disp_img.putdata(gradient_data)
         # disp_img.putdata([(x_gradient[i] ** 2 + y_gradient[i] ** 2) ** 0.5 for i in range(len(x_gradient))])
         
-        return disp_img    
+        return disp_img
     
+    def add_salt_pepper(self, salt_probability: float , pepper_probability: float):
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data()
+        
+        values = []
+        
+        for pixel in self.grayscale_image_data:
+            a = random.random()           
+            
+            if(a < salt_probability):
+                values.append(255)
+            elif(a < (salt_probability+pepper_probability)):
+                values.append(0)
+            else:
+                values.append(pixel)
+                
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+        
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(values)
+        
+        return disp_img
+            
 if __name__ == '__main__':
 
-    img = PcxImage('wad.pcx')
-    print(img.get_n_planes())
-    # img.get_highboost_filtered_image(2).show()
+    img = PcxImage('pcx images/scene.pcx')
+    img.add_salt_pepper(salt_probability=0.03, pepper_probability=0.02).show()
+    
+    

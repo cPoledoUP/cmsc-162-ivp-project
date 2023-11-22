@@ -436,6 +436,7 @@ class PcxImage:
         Image
             pcx image using only one color channel
         """
+        
         color_data = self.get_color_channels()[color]
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
@@ -463,6 +464,7 @@ class PcxImage:
         Processes and stores a list of the data of the grayscale image to prevent repetition of calculation
         s = (R + G + B) / 3
         """
+        
         if self.image_data == None:
             self.process_image_data()
             
@@ -769,6 +771,7 @@ class PcxImage:
         Image
             The Unsharped image
         """
+        
         if self.grayscale_image_data == None:
             self.process_grayscale_image_data()
         
@@ -880,6 +883,7 @@ class PcxImage:
         Returns:
             _type_: image
         """
+        
         if self.grayscale_image_data == None:
             self.process_grayscale_image_data()
         
@@ -942,6 +946,7 @@ class PcxImage:
         Returns:
             _type_: Image
         """
+        
         if self.grayscale_image_data == None:
             self.process_grayscale_image_data()
         
@@ -966,6 +971,15 @@ class PcxImage:
         return disp_img
     
     def add_geometric_filter(self, noise_degraded_img):     
+        """
+        performs geometric filter restoration technique to the noised image
+
+        Args:
+            noise_degraded_img ( Image ): noised image
+
+        Returns:
+            Image : restored image using Geometric filter
+        """
         
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
@@ -978,10 +992,10 @@ class PcxImage:
                 neighbors = self.get_neighbors(coordinates=(x, y), noised_image=noise_degraded_img)  # using default 3x3 mask
 
                 total = 1
-                for element in neighbors:
+                for element in neighbors:  # Get the product of the all the neighbouring pixels
                     total = total * element
                     
-                geometric_filtered_image.append(total**(1/9))
+                geometric_filtered_image.append(total**(1/9)) # raise the total product to 1/9
                 
         disp_img = Image.new('L', (width, height))
         disp_img.putdata(geometric_filtered_image)
@@ -989,6 +1003,16 @@ class PcxImage:
         return disp_img
     
     def add_contraharmonic(self, noise_degraded_img, q: int = 1):
+        """
+        performs contraharmonic filter on a noised image
+
+        Args:
+            noise_degraded_img ( Image ): noised image
+            q (int, optional): q parameter specifying the order of the filter .Defaults to 1.
+
+        Returns:
+            Image : restored image using Contraharmonic filter
+        """
         
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
@@ -996,14 +1020,14 @@ class PcxImage:
         
         contraharmonic_filtered_image = []      
         
-        for y in range(height):
+        for y in range(height): # get the neighbouring pixels of all the noised image pixels 
             for x in range(width):
                 neighbors = self.get_neighbors(coordinates=(x, y), noised_image=noise_degraded_img)  
 
                 numerator = 0
                 denominator = 0
                 for element in neighbors:
-                    if (element == 0):
+                    if (element == 0): # ignores elements with '0' value to avoid division by zero
                         continue
                     numerator = numerator + element**(q+1) 
                     denominator = denominator + element**q

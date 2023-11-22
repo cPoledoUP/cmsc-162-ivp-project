@@ -663,7 +663,7 @@ class PcxImage:
         
         return disp_img
     
-    def get_median_filtered_image(self, radius: int = 1) -> Image:
+    def get_median_filtered_image(self, radius: int = 1, noised_image = None) -> Image:
         """
         Creates an median-filtered version of a grayscale version of an image
 
@@ -677,7 +677,11 @@ class PcxImage:
         Image
             median-filtered grayscale image
         """
-
+        
+        if noised_image != None:
+            noised_list = noised_image
+            
+            
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
@@ -688,10 +692,10 @@ class PcxImage:
         # 2*radius+1 is side of mask, square and you get the area or total number of pixels in mask
         # divide by 2, and getting the floor, you get the middle index (no need +1 since index starts from 0)
         # (optimization) this is calculated once here instead of everytime in the for loop below
-        
+         
         for y in range(height):
             for x in range(width):
-                neighbors = self.get_neighbors((x, y), radius)
+                neighbors = self.get_neighbors((x, y), radius, noised_image=noised_list)
                 neighbors.sort()
                 filtered_image.append(neighbors[middle_index])   # median is middle index of sorted list
 
@@ -985,6 +989,7 @@ class PcxImage:
         return disp_img
     
     def add_contraharmonic(self, noise_degraded_img, q: int = 1):
+        
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
@@ -993,7 +998,7 @@ class PcxImage:
         
         for y in range(height):
             for x in range(width):
-                neighbors = self.get_neighbors(coordinates=(x, y), noised_image=noise_degraded_img)  # using default 3x3 mask
+                neighbors = self.get_neighbors(coordinates=(x, y), noised_image=noise_degraded_img)  
 
                 numerator = 0
                 denominator = 0
@@ -1012,13 +1017,14 @@ class PcxImage:
         disp_img.putdata(contraharmonic_filtered_image)
         
         return disp_img
-                
+    
+        
 if __name__ == '__main__':
 
-    img = PcxImage('pcx images/wad.pcx')
+    img = PcxImage('pcx images/wad1.pcx')
     img.apply_salt_pepper(0.3).show()
     filtered_image = list(img.apply_salt_pepper(0.03).getdata())
     
-    img.add_contraharmonic(filtered_image, q=1).show()
+    img.get_median_filtered_image(noised_image=filtered_image).show()
     # img.add_contraharmonic(filtered_image, q=-2).show()
     

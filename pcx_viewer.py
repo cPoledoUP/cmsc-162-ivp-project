@@ -1,5 +1,6 @@
 from PIL import Image, ImageDraw
 import random
+import numpy as np 
 
 class PcxImage:
 
@@ -858,33 +859,103 @@ class PcxImage:
         return disp_img
     
     def add_salt_pepper(self, salt_probability: float , pepper_probability: float):
+        """
+        Applies salt and pepper noise to a grayscale equivalent of the image
+
+        Args:
+            salt_probability (float): probability of salt
+            pepper_probability (float): probability of pepper
+
+        Returns:
+            _type_: image
+        """
         if self.grayscale_image_data == None:
             self.process_grayscale_image_data()
         
-        values = []
+        salt_pepper_values = []
         
         for pixel in self.grayscale_image_data:
             a = random.random()           
             
             if(a < salt_probability):
-                values.append(255)
+                salt_pepper_values.append(255)
             elif(a < (salt_probability+pepper_probability)):
-                values.append(0)
+                salt_pepper_values.append(0)
             else:
-                values.append(pixel)
+                salt_pepper_values.append(pixel)
                 
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
         
         disp_img = Image.new('L', (width, height))
-        disp_img.putdata(values)
+        disp_img.putdata(salt_pepper_values)
         
         return disp_img
+    
+    def add_gaussian(self):
+        """
+        Applies Gaussian noise to a grayscale equivalent of the image
+
+        Returns:
+            _type_: Image
+        """
+        
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data()
+        
+        mean = 0 
+        var = 0.01 # controls the amount of noise | variance determines the spread of the noise values | ^ Variance = Noisier Image
+        
+        gaussian_values = []
+        
+        # creating and storing the noise applied values 
+        for pixel in self.grayscale_image_data:
+            noise =  np.random.normal(mean, var)
+            gaussian_values.append(pixel + noise)
             
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+            
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(gaussian_values)
+        
+        return disp_img
+        
+    def add_erlang(self):
+        """
+        Applies Gamma noise to a grayscale equivalent of the image
+
+        Returns:
+            _type_: Image
+        """
+        if self.grayscale_image_data == None:
+            self.process_grayscale_image_data()
+        
+        alpha = 10 # controls the shape of the noise distribution
+        beta = 0.1 # Adjust the beta value to control the scale of the noise distribution
+        
+        erlang_values = []    
+        
+        # creating and storing the noise applied values 
+        for pixel in self.grayscale_image_data:
+            noise =  np.random.normal(alpha, beta)
+            erlang_values.append(pixel + noise)
+        
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+            
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(erlang_values)
+        
+        return disp_img
+        
+                
 if __name__ == '__main__':
 
-    img = PcxImage('pcx images/scene.pcx')
-    img.add_salt_pepper(salt_probability=0.03, pepper_probability=0.02).show()
+    img = PcxImage('pcx images/scene1.pcx')
+    img.add_erlang().show()
     
     

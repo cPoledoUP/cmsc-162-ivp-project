@@ -951,7 +951,63 @@ class PcxImage:
         disp_img.putdata(erlang_values)
         
         return disp_img
+    
+    # New Helper Function
+    def get_noise_neighbors(self, image, coordinates: tuple, radius: int = 1, pad: int = 0) -> list:
+        """
+        Returns the neighboring pixels of a given pixel coordinate
+
+        Parameters:
+        -----------
+        coordinates : tuple
+            coordinates of the pixel as (x, y)
+        radius : int
+            radius of the neighboring area to get (default: 1 (or 3x3 area))
+        pad : int
+            value for out of bounds pixels (default: 0)
         
+        Returns:
+        --------
+        list
+            the neighboring pixels as a list
+        """
+        
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+
+        neighbors = list()
+        # traverse each pixel starting from the upper-left to the lower-right pixels
+        for y in range(coordinates[1] - radius, coordinates[1] + radius + 1):
+            for x in range(coordinates[0] - radius, coordinates[0] + radius + 1):
+                if x < 0 or x >= width or y < 0 or y >= height: # if out of bounds index
+                    neighbors.append(pad)
+                else:
+                    neighbors.append(image[y * width + x])
+        
+        return neighbors
+    
+    def add_geometric_filter(self, noise_degraded_img):            
+        geometric_filter = [1, 2, 4,
+                            2, 4, 8,
+                            4, 8, 16]
+        
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+        
+        geometric_filtered_image = []
+        
+        for y in range(height):
+            for x in range(width):
+                neighbors = self.get_noise_neighbors(coordinates=(x, y), image=noise_degraded_img)  # using default 3x3 mask
+                geometric_filtered_image.append(sum([neighbors[i] * geometric_filter[i] for i in range(len(geometric_filter))]))
+
+                
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(geometric_filtered_image)
+        
+        return disp_img
                 
 if __name__ == '__main__':
 

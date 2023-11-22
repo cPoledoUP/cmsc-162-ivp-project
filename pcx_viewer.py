@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw
 import random
 import numpy as np 
+from matplotlib import pyplot as plt
 
 class PcxImage:
 
@@ -586,7 +587,7 @@ class PcxImage:
     ########## Project 1 Guide 5 ##########
 
     # Helper functions
-    def get_neighbors(self, coordinates: tuple, radius: int = 1, pad: int = 0) -> list:
+    def get_neighbors(self, coordinates: tuple, radius: int = 1, pad: int = 0, noised_image = None) -> list:
         """
         Returns the neighboring pixels of a given pixel coordinate
 
@@ -607,11 +608,17 @@ class PcxImage:
         
         if self.grayscale_image_data == None:
             self.process_grayscale_image_data()
-
+            
+        if noised_image != None:
+            noised_list = noised_image
+        else:
+            noised_list = self.grayscale_image_data
+            
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
 
+        
         neighbors = list()
         # traverse each pixel starting from the upper-left to the lower-right pixels
         for y in range(coordinates[1] - radius, coordinates[1] + radius + 1):
@@ -619,7 +626,7 @@ class PcxImage:
                 if x < 0 or x >= width or y < 0 or y >= height: # if out of bounds index
                     neighbors.append(pad)
                 else:
-                    neighbors.append(self.grayscale_image_data[y * width + x])
+                    neighbors.append(noised_list[y * width + x])
         
         return neighbors
     
@@ -858,7 +865,7 @@ class PcxImage:
         
         return disp_img
     
-    def add_salt_pepper(self, salt_probability: float , pepper_probability: float):
+    def apply_salt_pepper(self, probability: float):
         """
         Applies salt and pepper noise to a grayscale equivalent of the image
 
@@ -873,13 +880,13 @@ class PcxImage:
             self.process_grayscale_image_data()
         
         salt_pepper_values = []
-        
+ 
         for pixel in self.grayscale_image_data:
             a = random.random()           
             
-            if(a < salt_probability):
+            if(a < probability):
                 salt_pepper_values.append(255)
-            elif(a < (salt_probability+pepper_probability)):
+            elif(a < (2 * probability)):
                 salt_pepper_values.append(0)
             else:
                 salt_pepper_values.append(pixel)
@@ -893,7 +900,7 @@ class PcxImage:
         
         return disp_img
     
-    def add_gaussian(self):
+    def apply_gaussian(self):
         """
         Applies Gaussian noise to a grayscale equivalent of the image
 
@@ -904,16 +911,17 @@ class PcxImage:
         if self.grayscale_image_data == None:
             self.process_grayscale_image_data()
         
-        mean = 0 
-        var = 0.01 # controls the amount of noise | variance determines the spread of the noise values | ^ Variance = Noisier Image
+        mean = 0 # responsible for the bell curved shape of the distribution
+        var = 20 # controls the amount of noise | variance determines the spread of the noise values | ^ Variance = Noisier Image
         
         gaussian_values = []
         
         # creating and storing the noise applied values 
         for pixel in self.grayscale_image_data:
-            noise =  np.random.normal(mean, var)
+            noise =  np.random.normal(mean, var, size=None)
             gaussian_values.append(pixel + noise)
-            
+
+        
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
         height = dimensions[3] - dimensions[1] + 1
@@ -923,7 +931,7 @@ class PcxImage:
         
         return disp_img
         
-    def add_erlang(self):
+    def apply_erlang(self):
         """
         Applies Gamma noise to a grayscale equivalent of the image
 
@@ -933,14 +941,15 @@ class PcxImage:
         if self.grayscale_image_data == None:
             self.process_grayscale_image_data()
         
-        alpha = 10 # controls the shape of the noise distribution
-        beta = 0.1 # Adjust the beta value to control the scale of the noise distribution
+        alpha = 2 # controls the shape of the noise distribution | amount of noise 
+        beta = 20 # Adjust the beta value to control the scale of the noise distribution (overall brightness of the image)
         
         erlang_values = []    
         
         # creating and storing the noise applied values 
         for pixel in self.grayscale_image_data:
-            noise =  np.random.normal(alpha, beta)
+            # noise =  np.random.normal(alpha, beta, size=None)
+            noise = np.random.gamma(alpha, beta)
             erlang_values.append(pixel + noise)
         
         dimensions = self.get_window()
@@ -952,45 +961,7 @@ class PcxImage:
         
         return disp_img
     
-    # New Helper Function
-    def get_noise_neighbors(self, image, coordinates: tuple, radius: int = 1, pad: int = 0) -> list:
-        """
-        Returns the neighboring pixels of a given pixel coordinate
-
-        Parameters:
-        -----------
-        coordinates : tuple
-            coordinates of the pixel as (x, y)
-        radius : int
-            radius of the neighboring area to get (default: 1 (or 3x3 area))
-        pad : int
-            value for out of bounds pixels (default: 0)
-        
-        Returns:
-        --------
-        list
-            the neighboring pixels as a list
-        """
-        
-        dimensions = self.get_window()
-        width = dimensions[2] - dimensions[0] + 1
-        height = dimensions[3] - dimensions[1] + 1
-
-        neighbors = list()
-        # traverse each pixel starting from the upper-left to the lower-right pixels
-        for y in range(coordinates[1] - radius, coordinates[1] + radius + 1):
-            for x in range(coordinates[0] - radius, coordinates[0] + radius + 1):
-                if x < 0 or x >= width or y < 0 or y >= height: # if out of bounds index
-                    neighbors.append(pad)
-                else:
-                    neighbors.append(image[y * width + x])
-        
-        return neighbors
-    
-    def add_geometric_filter(self, noise_degraded_img):            
-        geometric_filter = [1, 2, 4,
-                            2, 4, 8,
-                            4, 8, 16]
+    def add_geometric_filter(self, noise_degraded_img):     
         
         dimensions = self.get_window()
         width = dimensions[2] - dimensions[0] + 1
@@ -1000,18 +971,54 @@ class PcxImage:
         
         for y in range(height):
             for x in range(width):
-                neighbors = self.get_noise_neighbors(coordinates=(x, y), image=noise_degraded_img)  # using default 3x3 mask
-                geometric_filtered_image.append(sum([neighbors[i] * geometric_filter[i] for i in range(len(geometric_filter))]))
+                neighbors = self.get_neighbors(coordinates=(x, y), noised_image=noise_degraded_img)  # using default 3x3 mask
 
+                total = 1
+                for element in neighbors:
+                    total = total * element
+                    
+                geometric_filtered_image.append(total**(1/9))
                 
         disp_img = Image.new('L', (width, height))
         disp_img.putdata(geometric_filtered_image)
         
         return disp_img
+    
+    def add_contraharmonic(self, noise_degraded_img, q: int = 1):
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+        
+        contraharmonic_filtered_image = []      
+        
+        for y in range(height):
+            for x in range(width):
+                neighbors = self.get_neighbors(coordinates=(x, y), noised_image=noise_degraded_img)  # using default 3x3 mask
+
+                numerator = 0
+                denominator = 0
+                for element in neighbors:
+                    if (element == 0):
+                        continue
+                    numerator = numerator + element**(q+1) 
+                    denominator = denominator + element**q
+                
+                if (denominator == 0):
+                    contraharmonic_filtered_image.append(0)    
+                else:
+                    contraharmonic_filtered_image.append(numerator/denominator)
+        
+        disp_img = Image.new('L', (width, height))
+        disp_img.putdata(contraharmonic_filtered_image)
+        
+        return disp_img
                 
 if __name__ == '__main__':
 
-    img = PcxImage('pcx images/scene1.pcx')
-    img.add_erlang().show()
+    img = PcxImage('pcx images/wad.pcx')
+    img.apply_salt_pepper(0.3).show()
+    filtered_image = list(img.apply_salt_pepper(0.03).getdata())
     
+    img.add_contraharmonic(filtered_image, q=1).show()
+    # img.add_contraharmonic(filtered_image, q=-2).show()
     

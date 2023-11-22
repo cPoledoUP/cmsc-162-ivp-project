@@ -939,8 +939,160 @@ class PcxImage:
 
         return disp_img
 
+    ######################### Project 2 #########################
+
+    def get_uncompressed_image_size(self):
+        if self.image_data == None:
+            self.process_image_data()
+
+        palette = []
+        for data in self.image_data:
+            if data not in palette:
+                palette.append(data)
+
+        palette_color_bits = len(bin(len(palette) - 1)) - 2
+
+        return {
+            "image size": len(self.image_data) * palette_color_bits / 8,
+            "palette size": len(palette) * 3,  # 3 byte color
+        }
+
+    def run_length_encoding(self):
+        if self.image_data == None:
+            self.process_image_data()
+
+        palette = []
+        rle_encoded_data = list()
+        last_color = -1
+        count = 0
+        highest_count = 1
+
+        # do the run length encoding
+        for data in self.image_data:
+            if data not in palette:
+                palette.append(data)
+
+            if data == last_color:
+                count += 1
+                if count > highest_count:
+                    highest_count = count
+            else:
+                if last_color != -1:
+                    rle_encoded_data.append(count)
+                    rle_encoded_data.append(palette.index(last_color))
+                last_color = data
+                count = 1
+        rle_encoded_data.append(count)
+        rle_encoded_data.append(palette.index(last_color))
+
+        highest_count_bits = len(bin(highest_count)) - 2
+        palette_color_bits = len(bin(len(palette) - 1)) - 2
+
+        size_info = {
+            "image size": highest_count_bits * len(rle_encoded_data) / 8,
+            "palette size": len(palette) * 3,  # 3 byte color
+        }
+
+        return rle_encoded_data, palette, size_info
+
+    def run_length_decode(self, rle_data, palette):
+        image_data = list()
+        for i in range(0, len(rle_data), 2):
+            for j in range(rle_data[i]):
+                image_data.append(palette[rle_data[i + 1]])
+
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+
+        disp_img = Image.new("RGB", (width, height))
+        disp_img.putdata(image_data)
+
+        return disp_img
+
+    def huffman_coding(self):
+        if self.image_data == None:
+            self.process_image_data()
+
+        # create frequency table
+        freq_table = dict()
+        for data in self.image_data:
+            if data in freq_table:
+                freq_table[data] += 1
+            else:
+                freq_table[data] = 1
+        freq_table = dict(sorted(freq_table.items(), key=lambda item: item[1]))
+
+        # create the huffman codes
+        heap = list()
+        for key in freq_table:
+            heap.append([key, freq_table[key]])
+        # create the tree
+        while len(heap) > 1:
+            left = heap.pop(0)
+            right = heap.pop(0)
+            entry = [left, left[1] + right[1], right]
+            heap.append(entry)
+            heap.sort(key=lambda item: item[1])
+
+        # map the codes
+        huffman_codes = dict()
+        heap[0][1] = ""
+        while len(heap) > 0:
+            node = heap.pop()
+            if len(node) == 3:
+                node[0][1] = node[1] + "0"
+                node[2][1] = node[1] + "1"
+                heap.append(node[0])
+                heap.append(node[2])
+            elif len(node) == 2:
+                huffman_codes[node[0]] = node[1]
+
+        # convert the image pixels to huffman codes
+        huffman_coded_image_data = ""
+        for pixel in self.image_data:
+            huffman_coded_image_data += huffman_codes[pixel]
+
+        huffman_codes_size = 0
+        for key in huffman_codes:
+            huffman_codes_size += len(huffman_codes[key])
+
+        size_info = {
+            "image size": len(huffman_coded_image_data) / 8,
+            "huffman codes size": huffman_codes_size / 8
+            + len(huffman_codes) * 3,  # 3 byte color
+        }
+
+        return huffman_coded_image_data, huffman_codes, size_info
+
+    def huffman_decode(self, huffman_data, huffman_codes):
+        huffman_codes = {v: k for k, v in huffman_codes.items()}
+        image_data = list()
+
+        current_string = ""
+        for bit in huffman_data:
+            current_string += bit
+            if current_string in huffman_codes:
+                image_data.append(huffman_codes[current_string])
+                current_string = ""
+
+        dimensions = self.get_window()
+        width = dimensions[2] - dimensions[0] + 1
+        height = dimensions[3] - dimensions[1] + 1
+
+        disp_img = Image.new("RGB", (width, height))
+        disp_img.putdata(image_data)
+
+        return disp_img
+
 
 if __name__ == "__main__":
-    img = PcxImage("wad.pcx")
-    print(img.get_n_planes())
-    # img.get_highboost_filtered_image(2).show()
+    img = PcxImage("pcx images/scene.pcx")
+    rle = img.run_length_encoding()
+    huffman = img.huffman_coding()
+    print("Uncompressed:", img.get_uncompressed_image_size())
+    print("RLE:", rle[2])
+    print("Huffman:", huffman[2])
+    img.get_image().show()
+    img.run_length_decode(rle[0], rle[1]).show()
+    img.huffman_decode(huffman[0], huffman[1]).show()

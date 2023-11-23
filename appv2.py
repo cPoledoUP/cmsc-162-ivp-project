@@ -76,7 +76,7 @@ unsharp_btn = ToolTipButton(
     buttons_frame, image=dark_btn_icon, tooltip="Unsharp Masking", text="U"
 )
 hiboost_btn = ToolTipButton(
-    buttons_frame, image=dark_btn_icon, tooltip="Median Filter", text="HB"
+    buttons_frame, image=dark_btn_icon, tooltip="Highboost Filter", text="HB"
 )
 gradient_btn = ToolTipButton(
     buttons_frame, image=dark_btn_icon, tooltip="Image Gradient", text="G"

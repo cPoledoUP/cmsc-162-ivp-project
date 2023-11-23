@@ -198,7 +198,7 @@ huffman_btn.grid(column=1, row=13, padx=5, pady=pady)
 
 # setup metadata elements
 metadata_title = ttk.Label(metadata_frame, text="Open an image first")
-metadata_label = ttk.Label(metadata_frame)
+metadata_label = ttk.Label(metadata_frame, wraplength=170)
 palette_title = ttk.Label(metadata_frame)
 palette_image = ImageFrame(metadata_frame)
 metadata_title.pack(anchor="nw")

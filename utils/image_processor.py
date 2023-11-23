@@ -13,6 +13,29 @@ class ImageProcessor:
 
         return img
 
+    def get_displayable_palette(palette_data, pixel_length: int) -> Image:
+        target_size = 16
+
+        image = Image.new(
+            mode="RGB", size=(target_size * pixel_length, target_size * pixel_length)
+        )
+
+        draw = ImageDraw.Draw(image)
+
+        for y in range(target_size):
+            for x in range(target_size):
+                draw.rectangle(
+                    [
+                        x * pixel_length,
+                        y * pixel_length,
+                        x * pixel_length + pixel_length,
+                        y * pixel_length + pixel_length,
+                    ],
+                    fill=palette_data[y * target_size + x],
+                )
+
+        return image
+
     def show_color_channel_images(image_data, width, height, color: str) -> Image:
         """
         Returns a color channel of the pcx image as displayable image

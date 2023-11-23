@@ -263,71 +263,6 @@ class PcxImage:
 
         return self.filler
 
-    def get_image_palette(self, pixel_length: int) -> Image:
-        """
-        Returns the image palette of the pcx file as displayable image
-
-        Parameters
-        ----------
-        pixel_length : int
-            pixel dimension of a single color in the palette
-
-        Returns
-        -------
-        Image
-            image of eof palette
-        """
-        if self.eof_palette == None:
-            self.process_image_data()
-
-        target_size = 16
-
-        image = Image.new(
-            mode="RGB",
-            size=(target_size * pixel_length, target_size * pixel_length),
-            color="#B0B0B0",
-        )
-
-        if len(self.eof_palette) == 0:
-            return image
-
-        draw = ImageDraw.Draw(image)
-
-        for y in range(target_size):
-            for x in range(target_size):
-                draw.rectangle(
-                    [
-                        x * pixel_length,
-                        y * pixel_length,
-                        x * pixel_length + pixel_length,
-                        y * pixel_length + pixel_length,
-                    ],
-                    fill=self.eof_palette[y * target_size + x],
-                )
-
-        return image
-
-    def get_image(self) -> Image:
-        """
-        Returns pcx image as a displayable image
-
-        Returns
-        -------
-        Image
-            displayable pcx image
-        """
-        if self.image_data == None:
-            self.process_image_data()
-
-        dimensions = self.get_window()
-        width = dimensions[2] - dimensions[0] + 1
-        height = dimensions[3] - dimensions[1] + 1
-
-        disp_img = Image.new("RGB", (width, height))
-        disp_img.putdata(self.image_data)
-
-        return disp_img
-
     def process_image_data(self) -> None:
         """
         Processes the image data (and possible eof palette) of the pcx file
@@ -446,6 +381,6 @@ class ImageParser:
             "width": width,
             "height": height,
             "pixel_data": list(img.getdata()),
-            "palette_data": list(),
+            "palette_data": None,
             "metadata": f"File Name: {location.split("/")[-1]}\nDimensions: {width} x {height}",
         }

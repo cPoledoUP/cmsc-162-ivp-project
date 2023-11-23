@@ -33,6 +33,19 @@ def open_file():
                 CURRENT_IMAGE["height"],
             )
         )
+        metadata_title.configure(text="Image Metadata")
+        metadata_label.configure(text=CURRENT_IMAGE["metadata"])
+        if CURRENT_IMAGE["palette_data"]:
+            palette_title.configure(text="Color Palette")
+            palette_image.display_image(
+                ImageProcessor.get_displayable_palette(
+                    CURRENT_IMAGE["palette_data"], 10
+                ),
+                False,
+            )
+        else:
+            palette_title.configure(text="")
+            palette_image.remove_image()
 
 
 ########## PLACEMENT OF UI ELEMENTS ##########
@@ -70,7 +83,7 @@ sidebar.pack(side="right", fill="y")
 
 buttons_frame = ttk.Frame(sidebar, relief="solid", padding=10)
 buttons_frame.pack(fill="both", expand=True)
-metadata_frame = ttk.Frame(sidebar, relief="solid")
+metadata_frame = ttk.Frame(sidebar, relief="solid", padding=10)
 metadata_frame.pack(fill="both", expand=True)
 
 sidebar.add(buttons_frame, text="Edit")
@@ -182,6 +195,16 @@ ordstat_btn.grid(column=2, row=11, padx=5, pady=pady)
 img_comp_label.grid(column=0, row=12, columnspan=3, pady=5, sticky="w")
 rle_btn.grid(column=0, row=13, padx=5, pady=pady)
 huffman_btn.grid(column=1, row=13, padx=5, pady=pady)
+
+# setup metadata elements
+metadata_title = ttk.Label(metadata_frame, text="Open an image first")
+metadata_label = ttk.Label(metadata_frame)
+palette_title = ttk.Label(metadata_frame)
+palette_image = ImageFrame(metadata_frame)
+metadata_title.pack(anchor="nw")
+metadata_label.pack(anchor="nw", pady=(10, 25))
+palette_title.pack(anchor="nw")
+palette_image.pack(pady=10)
 
 # start app
 root.mainloop()

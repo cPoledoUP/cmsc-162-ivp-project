@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from PIL import Image, ImageTk
 
 
 class CreateToolTip(object):
@@ -77,3 +78,33 @@ class ToolTipButton(ttk.Button):
         else:
             super().__init__(parent, image=image, compound="center", width=1)
         CreateToolTip(self, text=tooltip)
+
+
+class ImageFrame(ttk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent, relief="solid")
+        self.image = None
+        self.image_label = ttk.Label(self)
+        self.image_label.pack(expand=True)
+
+    def display_image(self, image: Image):
+        # resize image first to fit frame
+        max_width = self.winfo_width() - 10
+        max_height = self.winfo_height() - 10
+        width, height = image.size
+
+        if width / height > max_width / max_height:
+            wpercent = max_width / width
+            hsize = int(height * wpercent)
+            new_img = image.resize((max_width, hsize))
+        else:
+            hpercent = max_height / height
+            wsize = int(width * hpercent)
+            new_img = image.resize((wsize, max_height))
+
+        self.image = ImageTk.PhotoImage(new_img)
+        self.image_label.configure(image=self.image)
+
+    def remove_image(self):
+        self.image = None
+        self.image_label.configure(image=None)

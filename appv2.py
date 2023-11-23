@@ -1,8 +1,41 @@
 import tkinter as tk
-from tkinter import ttk
-from PIL import Image, ImageTk
-from utils.custom_tk_widgets import ToolTipButton
+from tkinter import ttk, filedialog, messagebox
+from utils.custom_tk_widgets import ToolTipButton, ImageFrame
 from utils.button_icon_gen import IvpBtnIcon
+from utils.image_parser import ImageParser
+from utils.image_processor import ImageProcessor
+
+# App globals
+CURRENT_IMAGE = None
+
+########## FUNCTIONS ##########
+
+
+def testing():
+    message = "default"
+    if CURRENT_IMAGE:
+        message = CURRENT_IMAGE["metadata"]
+    messagebox.showinfo(title="Info", message=message)
+
+
+def open_file():
+    global CURRENT_IMAGE
+    file_types = [("Image Files", ["*.pcx", "*.jpg", "*.jpeg", "*.png", "*.bmp"])]
+    filename = filedialog.askopenfilename(
+        title="Open an image file", filetypes=file_types
+    )
+    if filename:
+        CURRENT_IMAGE = ImageParser.parse_image(filename)
+        main_frame.display_image(
+            ImageProcessor.get_displayable_image(
+                CURRENT_IMAGE["pixel_data"],
+                CURRENT_IMAGE["width"],
+                CURRENT_IMAGE["height"],
+            )
+        )
+
+
+########## PLACEMENT OF UI ELEMENTS ##########
 
 # setup the root of the app
 root = tk.Tk()
@@ -13,16 +46,25 @@ root.state("zoomed")
 # configure styling
 # ttk.Style().configure("TFrame", background="#121212")
 
-# setup main frame
+##### setup menu buttons
+menubar = tk.Menu(root)
+root.config(menu=menubar)
+
+file_menu = tk.Menu(menubar, tearoff=False)
+file_menu.add_command(label="Open image", command=open_file)
+menubar.add_cascade(label="File", menu=file_menu)
+menubar.add_command(label="test", command=testing)
+
+##### setup main frame
 main_notebook = ttk.Notebook(root)
 main_notebook.pack(side="left", fill="both", expand=True)
 
-main_frame = ttk.Frame(main_notebook, relief="solid")
+main_frame = ImageFrame(main_notebook)
 main_frame.pack(fill="both", expand=True)
 
 main_notebook.add(main_frame, text="Original")
 
-# setup sidebar frame
+##### setup sidebar frame
 sidebar = ttk.Notebook(root, width=200)
 sidebar.pack(side="right", fill="y")
 

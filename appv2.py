@@ -25,27 +25,30 @@ def open_file():
         title="Open an image file", filetypes=file_types
     )
     if filename:
-        CURRENT_IMAGE = ImageParser.parse_image(filename)
-        main_frame.display_image(
-            ImageProcessor.get_displayable_image(
-                CURRENT_IMAGE["pixel_data"],
-                CURRENT_IMAGE["width"],
-                CURRENT_IMAGE["height"],
+        try:
+            CURRENT_IMAGE = ImageParser.parse_image(filename)
+            main_frame.display_image(
+                ImageProcessor.get_displayable_image(
+                    CURRENT_IMAGE["pixel_data"],
+                    CURRENT_IMAGE["width"],
+                    CURRENT_IMAGE["height"],
+                )
             )
-        )
-        metadata_title.configure(text="Image Metadata")
-        metadata_label.configure(text=CURRENT_IMAGE["metadata"])
-        if CURRENT_IMAGE["palette_data"]:
-            palette_title.configure(text="Color Palette")
-            palette_image.display_image(
-                ImageProcessor.get_displayable_palette(
-                    CURRENT_IMAGE["palette_data"], 10
-                ),
-                False,
-            )
-        else:
-            palette_title.configure(text="")
-            palette_image.remove_image()
+            metadata_title.configure(text="Image Metadata")
+            metadata_label.configure(text=CURRENT_IMAGE["metadata"])
+            if CURRENT_IMAGE["palette_data"]:
+                palette_title.configure(text="Color Palette")
+                palette_image.display_image(
+                    ImageProcessor.get_displayable_palette(
+                        CURRENT_IMAGE["palette_data"], 10
+                    ),
+                    False,
+                )
+            else:
+                palette_title.configure(text="")
+                palette_image.remove_image()
+        except Exception as e:
+            messagebox.showerror("Error opening file", str(e))
 
 
 ########## PLACEMENT OF UI ELEMENTS ##########

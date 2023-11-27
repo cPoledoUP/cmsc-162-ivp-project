@@ -53,9 +53,11 @@ def open_file():
                     False,
                     False,
                 )
+                palette_image.pack(pady=10)
             else:
                 palette_title.configure(text="")
                 palette_image.remove_image()
+                palette_image.pack_forget()
 
             GRAYSCALE_DATA = list(
                 ImageProcessor.get_grayscale_image(
@@ -497,7 +499,6 @@ palette_image = ImageFrame(metadata_frame, closable=False)
 metadata_title.pack(anchor="nw")
 metadata_label.pack(anchor="nw", pady=(10, 25))
 palette_title.pack(anchor="nw")
-palette_image.pack(pady=10)
 
 # start app
 root.mainloop()

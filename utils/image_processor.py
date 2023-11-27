@@ -96,8 +96,6 @@ class ImageProcessor:
         for pixel in image_data:
             grayscale_image_data.append(int((pixel[0] + pixel[1] + pixel[2]) / 3))
 
-        print(width, height)
-
         disp_img = Image.new("L", (width, height))
         disp_img.putdata(grayscale_image_data)
 
@@ -189,7 +187,6 @@ class ImageProcessor:
         coordinates: tuple,
         radius: int = 1,
         pad: int = 0,
-        noised_image=None,
     ) -> list:
         """
         Returns the neighboring pixels of a given pixel coordinate
@@ -209,11 +206,6 @@ class ImageProcessor:
             the neighboring pixels as a list
         """
 
-        if noised_image != None:
-            noised_list = noised_image
-        else:
-            noised_list = grayscale_data
-
         neighbors = list()
         # traverse each pixel starting from the upper-left to the lower-right pixels
         for y in range(coordinates[1] - radius, coordinates[1] + radius + 1):
@@ -223,12 +215,14 @@ class ImageProcessor:
                 ):  # if out of bounds index
                     neighbors.append(pad)
                 else:
-                    neighbors.append(noised_list[y * width + x])
+                    neighbors.append(grayscale_data[y * width + x])
 
         return neighbors
 
     # Image functions
-    def get_average_filtered_image(self, width, height, radius: int = 1) -> Image:
+    def get_average_filtered_image(
+        self, grayscale_data, width, height, radius: int = 1
+    ) -> Image:
         """
         Function to get the average-filtered (blur) image
 
@@ -243,14 +237,14 @@ class ImageProcessor:
             An average-filtered image (blurred)
 
         """
-
-        filtered_image = (
-            []
-        )  # stores the calculated values of the average-filtered image
+        # stores the calculated values of the average-filtered image
+        filtered_image = list()
 
         for y in range(height):
             for x in range(width):
-                neighbors = self.get_neighbors((x, y), radius)
+                neighbors = self.get_neighbors(
+                    grayscale_data, width, height, (x, y), radius
+                )
                 filtered_image.append(int(sum(neighbors) / len(neighbors)))
 
         disp_img = Image.new("L", (width, height))
@@ -259,7 +253,7 @@ class ImageProcessor:
         return disp_img
 
     def get_median_filtered_image(
-        self, width, height, radius: int = 1, noised_image=None
+        self, grayscale_data, width, height, radius: int = 1
     ) -> Image:
         """
         Creates an median-filtered version of a grayscale version of an image
@@ -275,9 +269,6 @@ class ImageProcessor:
             median-filtered grayscale image
         """
 
-        if noised_image != None:
-            noised_list = noised_image
-
         filtered_image = []
 
         middle_index = int(((2 * radius + 1) ** 2) / 2)
@@ -287,7 +278,9 @@ class ImageProcessor:
 
         for y in range(height):
             for x in range(width):
-                neighbors = self.get_neighbors((x, y), radius, noised_image=noised_list)
+                neighbors = self.get_neighbors(
+                    grayscale_data, width, height, (x, y), radius
+                )
                 neighbors.sort()
                 filtered_image.append(
                     neighbors[middle_index]
@@ -298,7 +291,9 @@ class ImageProcessor:
 
         return disp_img
 
-    def get_highpass_filtered_image(self, width, height, filter: int = 1) -> Image:
+    def get_highpass_filtered_image(
+        self, grayscale_data, width, height, filter: int = 1
+    ) -> Image:
         """
         Returns a laplacian transformed version of the image
 
@@ -382,7 +377,9 @@ class ImageProcessor:
 
         for y in range(height):
             for x in range(width):
-                neighbors = self.get_neighbors((x, y))  # using default 3x3 mask
+                neighbors = self.get_neighbors(
+                    grayscale_data, width, height, (x, y)
+                )  # using default 3x3 mask
                 filtered_image.append(
                     sum(
                         [neighbors[i] * filter_used[i] for i in range(len(filter_used))]
@@ -405,7 +402,9 @@ class ImageProcessor:
             The Unsharped image
         """
 
-        blurred_image = list(self.get_average_filtered_image().getdata())
+        blurred_image = list(
+            self.get_average_filtered_image(grayscale_data, width, height).getdata()
+        )
         original_image = grayscale_data
         # mask is subtracting the blurred image from the original image
         mask = [
@@ -441,7 +440,7 @@ class ImageProcessor:
         """
 
         highpassed_image = list(
-            self.get_highpass_filtered_image(2).getdata()
+            self.get_highpass_filtered_image(grayscale_data, width, height, 2).getdata()
         )  # store the highpassed version of the image using the second filter
         original_image = grayscale_data  # apply the function for each
         highboosted_image = [
@@ -454,7 +453,7 @@ class ImageProcessor:
 
         return disp_img
 
-    def get_image_gradient(self, width, height, mode: int = 1) -> Image:
+    def get_image_gradient(self, grayscale_data, width, height, mode: int = 1) -> Image:
         """
         Returns an image processed with Sobel operator
 
@@ -477,7 +476,9 @@ class ImageProcessor:
 
         for y in range(height):
             for x in range(width):
-                neighbors = self.get_neighbors((x, y))  # using default 3x3 mask
+                neighbors = self.get_neighbors(
+                    grayscale_data, width, height, (x, y)
+                )  # using default 3x3 mask
                 if mode != 3:
                     x_gradient.append(
                         sum(
@@ -603,7 +604,7 @@ class ImageProcessor:
         for y in range(height):
             for x in range(width):
                 neighbors = self.get_neighbors(
-                    coordinates=(x, y), noised_image=noise_degraded_img
+                    noise_degraded_img, width, height, (x, y)
                 )  # using default 3x3 mask
 
                 total = 1
@@ -640,7 +641,7 @@ class ImageProcessor:
         ):  # get the neighbouring pixels of all the noised image pixels
             for x in range(width):
                 neighbors = self.get_neighbors(
-                    coordinates=(x, y), noised_image=noise_degraded_img
+                    noise_degraded_img, width, height, (x, y)
                 )
 
                 numerator = 0

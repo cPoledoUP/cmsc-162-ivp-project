@@ -6,752 +6,537 @@
 #####################################################################
 
 import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox, simpledialog
-from tkinter.filedialog import askopenfilename
-from PIL import ImageTk
-from pcx_viewer import *
-from matplotlib import pyplot as plt
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
+from tkinter import ttk, filedialog, messagebox, simpledialog
+from utils.custom_tk_widgets import ToolTipButton, ImageFrame, ask_choice
+from utils.button_icon_gen import IvpBtnIcon
+from utils.image_parser import ImageParser
+from utils.image_processor import ImageProcessor
 
-"""
-Program module structure
+# App globals
+CURRENT_IMAGE = None
+GRAYSCALE_DATA = None
+LAST_NOISED_DATA = None
 
-.
-└── App (Tk)
-    ├── Menubar (Menu)
-    └── Main (Frame)
-        ├── ImageFrame (LabelFrame)
-        ├── OutputFrame (LabelFrame)(previously ChannelFrame)
-        └── MetadataFrame (Frame)
-            ├── ToolBar (Frame)
-            ├── Metadata (Message)
-            └── PaletteFrame (LabelFrame)
-"""
+########## FUNCTIONS ##########
 
-class App(tk.Tk):
-    """
-    Represents the app
-    """
-    
-    def __init__(self, title, size, start_zoomed):
 
-        # initialize
-        super().__init__()
-        self.title(title)
-        self.geometry(size)
-        if start_zoomed:
-            self.state('zoomed')
-        self.protocol("WM_DELETE_WINDOW", self.quit_app)
+def show_about():
+    messagebox.showinfo(
+        "About",
+        "Made for CMSC 162 Introduction to Image and Video Processing\n\nAuthors:\nClent Japhet Poledo\nFrancis Albert Celeste",
+    )
 
-        # add widgets
-        self.menu_bar = Menubar(self)
-        self.main = Main(self)
 
-        # setup app
-        self.setup_menu_buttons()
-        self.bind_all('<KeyRelease>', self.on_key_release)
+def open_file():
+    global CURRENT_IMAGE
+    global GRAYSCALE_DATA
 
-        # run the app
-        self.mainloop()
-
-        
-    def menu_open(self):
-        """
-        Opens a pcx file
-        """
-
-        # ftypes = [('pcx file', ['*.pcx']), ('image files', ['*.jpg', '*.png', '*.tiff', '*.ppm', '*.gif', '*.bmp'])]
-        ftypes = [('pcx file', ['*.pcx'])]
-
+    file_types = [("Image Files", ["*.pcx", "*.jpg", "*.jpeg", "*.png", "*.bmp"])]
+    filename = filedialog.askopenfilename(
+        title="Open an image file", filetypes=file_types
+    )
+    current_frame = main_notebook.nametowidget(main_notebook.select())
+    if filename:
         try:
-            file = open(askopenfilename(parent=self, title='Select file', filetypes=ftypes))
-
-            pcx_image = PcxImage(file.name) # to be used to retrieve metadata
-        
-            self.main.output_frame.remove_image()
-            self.image = pcx_image.get_image() # image data
-            palette = pcx_image.get_image_palette(5)   # image color palette
-            self.main.image_metadata.palette_frame.display_palette(palette)
-            self.main.image_metadata.message.display_all(pcx_image)
-            self.main.image_metadata.tool_bar.gamma_input.delete(0, "end")
-            self.main.image_metadata.tool_bar.disable_slider()
-            self.main.image_metadata.tool_bar.enable_toolbar(pcx_image)
-            self.main.image_frame.display_image(self.image)
-            file.close()
-            self.menu_bar.entryconfig(2, state=tk.NORMAL)
-        except FileNotFoundError:
-            pass
-        except Exception as e:
-            messagebox.showerror('Error', e)
-        # else:
-        #     self.image = Image(file.name)
-        #     self.main.image_metadata.palette_frame.remove_palette()
-        #     self.main.image_metadata.message.remove_display()
-        
-        
-    def menu_close(self):
-        """
-        Closes current image in app
-        """
-        self.menu_bar.entryconfig(2, state=tk.DISABLED)
-        self.main.image_frame.remove_image()
-        self.main.output_frame.remove_image()
-        self.main.image_metadata.palette_frame.remove_palette()
-        self.main.image_metadata.message.remove_display()
-        self.main.image_metadata.tool_bar.disable_toolbar()
-        self.main.image_metadata.tool_bar.disable_slider()
-    
-    def quit_app(self):
-        """
-        Exit the app
-        """
-        
-        print("Exiting app...")
-        self.quit()
-        self.destroy()
-        print("Exited successfully.")
-
-    def setup_menu_buttons(self):
-        """
-        Make menu buttons functional
-        """
-
-        self.menu_bar.editmenu.entryconfig(0, command=self.main.image_metadata.tool_bar.red_button.invoke)
-        self.menu_bar.editmenu.entryconfig(1, command=self.main.image_metadata.tool_bar.green_button.invoke)
-        self.menu_bar.editmenu.entryconfig(2, command=self.main.image_metadata.tool_bar.blue_button.invoke)
-        self.menu_bar.editmenu.entryconfig(4, command=self.main.image_metadata.tool_bar.grey_scale_button.invoke)
-        self.menu_bar.editmenu.entryconfig(5, command=self.main.image_metadata.tool_bar.negative_button.invoke)
-        self.menu_bar.editmenu.entryconfig(6, command=self.main.image_metadata.tool_bar.bw_button.invoke)
-        self.menu_bar.editmenu.entryconfig(7, command=self.main.image_metadata.tool_bar.gamma_button.invoke)
-        self.menu_bar.editmenu.entryconfig(9, command=self.main.image_metadata.tool_bar.averaging_filter_button.invoke)
-        self.menu_bar.editmenu.entryconfig(10, command=self.main.image_metadata.tool_bar.median_filter_button.invoke)
-        self.menu_bar.editmenu.entryconfig(11, command=self.main.image_metadata.tool_bar.highpass_filter_button.invoke)
-        self.menu_bar.editmenu.entryconfig(12, command=self.main.image_metadata.tool_bar.unsharp_masking_button.invoke)
-        self.menu_bar.editmenu.entryconfig(13, command=self.main.image_metadata.tool_bar.highboost_filter_button.invoke)
-        self.menu_bar.editmenu.entryconfig(14, command=self.main.image_metadata.tool_bar.gradient_filter_button.invoke)
-        self.menu_bar.editmenu.entryconfig(16, command=self.main.output_frame.show_histogram)
-    
-    def on_key_release(self, event):
-        """
-        Called on keyboard key release for keyboard shortcuts
-        """
-        
-        if event.state == 4:  # keypress with Ctrl
-            match event.keysym:
-                case 'o' | 'O':
-                    self.menu_bar.filebutton.invoke(0)  # open image
-                case 'c'| 'C':
-                    self.menu_bar.filebutton.invoke(1)  # close image
-                case 'q'| 'Q':
-                    self.menu_bar.filebutton.invoke(3)  # quit app
-                case 'r' | 'R':
-                    self.main.image_metadata.tool_bar.red_button.invoke()  # red button
-                case 'g' | 'G':
-                    self.main.image_metadata.tool_bar.green_button.invoke()  # green button
-                case 'b' | 'B':
-                    self.main.image_metadata.tool_bar.blue_button.invoke()  # blue button
-                case '1':
-                    self.main.image_metadata.tool_bar.averaging_filter_button.invoke()  # averaging filter button
-                case '2':
-                    self.main.image_metadata.tool_bar.median_filter_button.invoke() # median filter button
-                case '3':
-                    self.main.image_metadata.tool_bar.highpass_filter_button.invoke()   # highpass filter button
-                case '4':
-                    self.main.image_metadata.tool_bar.unsharp_masking_button.invoke()   # unsharp masking button
-                case '5':
-                    self.main.image_metadata.tool_bar.highboost_filter_button.invoke()  # highboost filter button
-                case '6':
-                    self.main.image_metadata.tool_bar.gradient_filter_button.invoke()   # gradient filter button
-                case 'h' | 'H':
-                    self.menu_bar.editmenu.invoke(16)
-        else:
-            match event.keysym:
-                case 'F1':
-                    self.main.image_metadata.tool_bar.grey_scale_button.invoke()    # grayscale button
-                case 'F2':
-                    self.main.image_metadata.tool_bar.negative_button.invoke()    # negative button
-                case 'F3':
-                    self.main.image_metadata.tool_bar.bw_button.invoke()    # black and white button
-                case 'F4':
-                    self.main.image_metadata.tool_bar.gamma_button.invoke()    # gamma button
-
-        
-class Menubar(tk.Menu):
-    """
-    Represents the top menu bar used in the app
-    """
-
-    def __init__(self, parent):
-
-        # initialize
-        super().__init__(parent)
-        self.parent = parent
-        parent['menu'] = self
-        parent.option_add('*tearOff', False)
-
-        
-        # create the menu buttons
-        self.filebutton = tk.Menu(self)
-        # filebutton.add_command(label="New", command=self.do_nothing)
-        self.filebutton.add_command(label="Open (Ctrl+O)", command=parent.menu_open)
-        # filebutton.add_command(label="Save", command=self.do_nothing)
-        # filebutton.add_command(label="Save as...", command=self.do_nothing)
-        self.filebutton.add_command(label="Close (Ctrl+C)", command=parent.menu_close)
-        self.filebutton.add_separator()
-        self.filebutton.add_command(label="Exit (Ctrl+Q)", command=parent.quit_app)
-        self.add_cascade(label="File", menu=self.filebutton)
-
-        self.editmenu = tk.Menu(self)
-        # self.editmenu.add_command(label="Undo", command=self.do_nothing)
-        # self.editmenu.add_separator()
-        # self.editmenu.add_command(label="Cut", command=self.do_nothing)
-        # self.editmenu.add_command(label="Copy", command=self.do_nothing)
-        # self.editmenu.add_command(label="Paste", command=self.do_nothing)
-        # self.editmenu.add_command(label="Delete", command=self.do_nothing)
-        # self.editmenu.add_command(label="Select All", command=self.do_nothing)
-        self.editmenu.add_command(label="Red Channel (Ctrl+R)", command=self.do_nothing)
-        self.editmenu.add_command(label="Green Channel (Ctrl+G)", command=self.do_nothing)
-        self.editmenu.add_command(label="Blue Channel (Ctrl+B)", command=self.do_nothing)
-        self.editmenu.add_separator()
-        self.editmenu.add_command(label="Grayscale (F1)", command=self.do_nothing)
-        self.editmenu.add_command(label="Negative (F2)", command=self.do_nothing)
-        self.editmenu.add_command(label="Black and White (F3)", command=self.do_nothing)
-        self.editmenu.add_command(label="Gamma Transform (F4)", command=self.do_nothing)
-        self.editmenu.add_separator()
-        self.editmenu.add_command(label="Averaging Filter (Ctrl+1)", command=self.do_nothing)
-        self.editmenu.add_command(label="Median Filter (Ctrl+2)", command=self.do_nothing)
-        self.editmenu.add_command(label="Highpass Filtering (Ctrl+3)", command=self.do_nothing)
-        self.editmenu.add_command(label="Unsharp Masking (Ctrl+4)", command=self.do_nothing)
-        self.editmenu.add_command(label="Highboost Filtering (Ctrl+5)", command=self.do_nothing)
-        self.editmenu.add_command(label="Gradient (Ctrl+6)", command=self.do_nothing)
-        self.editmenu.add_separator()
-        self.editmenu.add_command(label="Show Histogram (Ctrl+H)", command=self.do_nothing, state=tk.DISABLED)
-        self.add_cascade(label="Edit", menu=self.editmenu, state=tk.DISABLED)
-
-        # helpmenu = tk.Menu(self)
-        # helpmenu.add_command(label="Help Index", command=self.do_nothing)
-        self.add_command(label="About...", command=self.show_info)
-        # self.add_cascade(label="Help", menu=helpmenu)
-            
-    def do_nothing(self):
-        messagebox.showerror('Error!', 'This feature is not yet implemented!')
-    
-    def show_info(self):
-        messagebox.showinfo("About", "Made for CMSC 162 Introduction to Image and Video Processing\n\nAuthors:\nClent Japhet Poledo\nFrancis Albert Celeste")
-
-class Main(ttk.Frame):
-    """
-    Represents the main area of the app
-    """
-
-    def __init__(self, parent):
-
-        # initialize
-        super().__init__(parent)
-        self.parent = parent
-        # add widgets
-        self.image_frame = ImageFrame(self)
-        self.output_frame = OutputFrame(self)
-        self.image_metadata = MetaDataFrame(self)
-        # self.grid(row=0,column=0,sticky="nwes")
-        # self.grid_columnconfigure(0, weight=1)
-        # self.grid_rowconfigure(0, weight=1)
-        self.pack(fill="both", expand=True)
-        self.configure(relief=tk.SUNKEN)
-        
-class ImageFrame(tk.LabelFrame):
-    """
-    Contains the image display area of the app
-    """
-
-    def __init__(self, parent):
-
-        # initialize
-        super().__init__(parent)
-        self.parent = parent
-        self.pack(side = tk.LEFT, expand=False, padx=100, pady=10)
-        self.label = tk.Label(self)
-        self.label.pack()
-        self.max_width = 500
-        self.max_height = 240
-        self.configure(relief="flat")
-
-    def display_image(self, image):
-        """
-        Display the image in the frame
-        """
-
-        # resize image first to fit frame
-        if float(image.size[0])/float(image.size[1]) > self.max_width/self.max_height:
-            wpercent = self.max_width/float(image.size[0])
-            hsize = int((float(image.size[1])*float(wpercent)))
-            new_img = image.resize((self.max_width, hsize))
-        else:
-            hpercent = self.max_height/float(image.size[1])
-            wsize = int((float(image.size[0])*float(hpercent)))
-            new_img = image.resize((wsize, self.max_height))
-
-        # put image in the img_container
-        self.configure(labelanchor='n', text="Original Image", font=('Helvetica Bold', 20))
-        new_img = ImageTk.PhotoImage(new_img)
-        self.label['image'] = new_img
-        self.label.image = new_img
-        
-    def remove_image(self):
-        """
-        Remove the image in the frame
-        """
-
-        self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
-        self.label['image'] = None
-        self.label.image = None
-        
-class OutputFrame(tk.LabelFrame):
-    """
-    Contains the channel image display area of the app
-    """
-
-    def __init__(self, parent):
-
-        # initialize
-        super().__init__(parent)
-        self.parent = parent
-        self.pack(side = tk.LEFT, expand=True,padx=10, pady=10)
-        self.label = tk.Label(self)
-        self.label.pack()
-        self.hist_data = None
-        self.canvas = None
-        self.max_width = 500
-        self.max_height = 240
-        self.configure(relief="flat")
-
-    def show_histogram(self):
-        """
-        Display the histogram of transformed image
-        """
-
-        # remove existing histogram
-        if self.canvas != None:
-            self.canvas.get_tk_widget().pack_forget()
-            
-        # histogram for the color channel        
-        fig, ax = plt.subplots(figsize = (5, 3))
-        ax.hist(self.hist_data, bins=256)
-
-        self.canvas = FigureCanvasTkAgg(fig, 
-                               master = self)
-        self.canvas.get_tk_widget().pack(padx=20, pady=20)
-        plt.close()
-        
-    def display_transformed_image(self, pcx_image: PcxImage, mode, *args):
-        """
-        Display the transformed image in the frame
-        """
-
-        # remove existing image in frame first
-        self.remove_image()
-        
-        match mode:
-            case 'RED':
-                image = pcx_image.show_color_channel_images('red')
-                label = 'Red Color Channel'
-                self.hist_data = pcx_image.get_color_channels()['red']
-            case 'GREEN':
-                image = pcx_image.show_color_channel_images('green')
-                label = 'Green Color Channel'
-                self.hist_data = pcx_image.get_color_channels()['green']
-            case 'BLUE':
-                image = pcx_image.show_color_channel_images('blue')
-                label = 'Blue Color Channel'
-                self.hist_data = pcx_image.get_color_channels()['blue']
-            case 'GREY':
-                image = pcx_image.get_grayscale_image()
-                label = 'Grayscale Image\ns=(R+G+B)/3'
-                self.hist_data = list(image.getdata())
-            case 'NEG':
-                image = pcx_image.get_negative_image()
-                label = 'Negative Image'
-                self.hist_data = list(image.getdata())
-            case 'B/W':
-                image = pcx_image.get_black_and_white_image(args[0])
-                label = 'Black and White Image'
-                self.hist_data = list(image.getdata())
-            case 'GAMMA':
-                image = pcx_image.get_gamma_transformed_image(args[0])
-                label = 'Gamma Transformed Image'
-                self.hist_data = list(image.getdata())
-            case 'AVE':
-                image = pcx_image.get_average_filtered_image(args[0])
-                side_dimension = args[0] * 2 + 1
-                label = f"Averaging Filter ({side_dimension}x{side_dimension})"
-                self.hist_data = list(image.getdata())
-            case 'MED':
-                image = pcx_image.get_median_filtered_image(args[0])
-                side_dimension = args[0] * 2 + 1
-                label = f"Median Filter ({side_dimension}x{side_dimension})"
-                self.hist_data = list(image.getdata())
-            case 'HI':
-                laplacian_filter_labels = {
-                    1: '\n| 0  1  0 |\n| 1 -4  1 |\n| 0  1  0 |',
-                    2: '\n| 0 -1  0 |\n|-1  4 -1 |\n| 0 -1  0 |',
-                    3: '\n| 1  1  1 |\n| 1 -8  1 |\n| 1  1  1 |',
-                    4: '\n|-1 -1 -1 |\n|-1  8 -1 |\n|-1 -1 -1 |'
-                }
-                image = pcx_image.get_highpass_filtered_image(args[0])
-                label = 'Highpass Filtering (Laplacian Operator)' + laplacian_filter_labels[args[0]]
-                self.hist_data = list(image.getdata())
-            case 'UNSHARP':
-                image = pcx_image.get_unsharp_masked_image()
-                label = 'Unsharp Masking'
-                self.hist_data = list(image.getdata())
-            case 'HIBOOST':
-                image = pcx_image.get_highboost_filtered_image(args[0])
-                label = f"Highboost Filtering (A={args[0]})"
-                self.hist_data = list(image.getdata())
-            case 'EDGE':
-                sobel_labels = {
-                    1: 'xy',
-                    2: 'x',
-                    3: 'y'
-                }
-                image = pcx_image.get_image_gradient(args[0])
-                label = 'Gradient (Sobel Operator)' + f"({sobel_labels[args[0]]})"
-                self.hist_data = list(image.getdata())
-        
-        # display the image 
-        # resize image first to fit frame
-        if float(image.size[0])/float(image.size[1]) > self.max_width/self.max_height:
-            wpercent = self.max_width/float(image.size[0])
-            hsize = int((float(image.size[1])*float(wpercent)))
-            new_img = image.resize((self.max_width, hsize))
-        else:
-            hpercent = self.max_height/float(image.size[1])
-            wsize = int((float(image.size[0])*float(hpercent)))
-            new_img = image.resize((wsize, self.max_height))
-
-        # put image in the img_container
-        self.configure(labelanchor='n', text=label, font=('Helvetica Bold', 20))
-        new_img = ImageTk.PhotoImage(new_img)
-        self.label['image'] = new_img
-        self.label.image = new_img
-
-        self.parent.parent.menu_bar.editmenu.entryconfig(16, state=tk.NORMAL)
-
-    def remove_image(self):
-        """
-        Remove the image in the frame
-        """
-
-        self.configure(labelanchor='n', text="", font=('Helvetica Bold', 30))
-        self.label['image'] = None
-        self.label.image = None
-        self.hist_data = None
-        if self.canvas != None:
-            self.canvas.get_tk_widget().pack_forget()
-        self.parent.parent.menu_bar.editmenu.entryconfig(16, state=tk.DISABLED)
-
-class MetaDataFrame (tk.Frame):
-    """
-    Represents the Metadata frame
-    """
-
-    def __init__(self, parent):
-        #initialize
-        super().__init__(parent, bg='#B0B0B0', width=250)
-        self.parent = parent
-        self.tool_bar = ToolBar(self)
-        sep = ttk.Separator(self, orient='horizontal')
-        sep.pack(fill='x')
-        
-        
-        # Create a frame for the message and pack it below the buttons
-        # self.message_frame = tk.Frame(self, bd=0, highlightthickness=0)
-        # self.message_frame.pack(side=tk.TOP, padx=20, pady=20)
-
-        # Create the message widget
-        self.message = MetaData(self)
-        
-        # Create a frame for the palette_frame and pack it at the bottom
-        # self.palette_frame_frame = tk.Frame(self, highlightthickness=0)
-        # self.palette_frame_frame.pack(side=tk.TOP, padx=20, pady=20)
-
-        # Create the palette_frame
-        self.palette_frame = PaletteFrame(self)
-
-        self.pack(side=tk.RIGHT, fill=tk.Y)
-        # self.pack_propagate(False) # disable resizing
-
-class ToolBar(tk.Frame):
-    """
-    holds the buttons, sliders, and other input widgets
-    """
-
-    def __init__(self, parent):
-        #initialize
-        super().__init__(parent, highlightthickness=0)
-        self.parent = parent
-
-        self.pack(side = tk.TOP, padx=20, pady=20)
-
-        # buttons
-        self.red_button = tk.Button(self, text='RED',width=7, height= 1, fg='white', bg='red')
-        self.red_button.grid(row=0, column=0, padx=2)
-        
-        self.green_button = tk.Button(self, text='GREEN',width=7, height= 1, fg='white', bg='green')
-        self.green_button.grid(row=0, column=1, padx=2)
-        
-        self.blue_button = tk.Button(self, text='BLUE',width=7, height= 1, fg='white', bg='blue')
-        self.blue_button.grid(row=0, column=2, padx=2)
-
-        self.grey_scale_button = tk.Button(self, text='GREY',width=7, height= 1, fg='white', bg='gray')
-        self.grey_scale_button.grid(row=1, column=0, padx=2, pady=(2,10))
-        
-        self.negative_button = tk.Button(self, text='NEG',width=7, height= 1, fg='black', bg='#d3d3d3')
-        self.negative_button.grid(row=1, column=1, padx=2, pady=(2,10))
-        
-        self.bw_button = tk.Button(self, text='B/W',width=7, height= 1, fg='black', bg='#d3d3d3')
-        self.bw_button.grid(row=1, column=2, padx=2, pady=(2,10))
-        
-        self.bw_threshold_frame = tk.LabelFrame(self, text="B/W Threshold", bg='#fefefe', padx=20, pady=20)
-        self.bw_threshold_frame.grid(row=2, columnspan=3)
-        
-        self.config(relief='flat', bg='#B0B0B0')
-        
-        """
-        
-        BLACK & WHITE SLIDER
-        
-        """
-        
-        #current value of the slider
-        self.value = tk.Label(self.bw_threshold_frame, bg='#fefefe')
-        self.value.pack(side="bottom")
-        
-        self.current_value = tk.IntVar()
-        
-        #create slider
-        self.bw_slider = ttk.Scale(
-            self.bw_threshold_frame,
-            from_= 0,
-            to=255,
-            orient='horizontal',
-            command=self.slider_changed,
-            variable= self.current_value
-        )
-        
-        #set default to mid
-        self.bw_slider.set(127)
-        self.bw_slider.pack()
-        
-        #current value LABEL of the slider
-        self.value_label = tk.Label(self.bw_threshold_frame, text="Value:", padx=20, pady=5, bg='#fefefe')
-        self.value_label.pack(side="bottom")
-        
-        #gamma input label
-        self.gamma_input_label = tk.Label(self, text="Enter gamma: ", bg='#B0B0B0')
-        self.gamma_input_label.grid(row=4, column=0, columnspan=2, pady=5, padx=0)
-        
-        #gamma input 
-        # self.gamma_threshold = tk.StringVar()
-        # self.gamma_threshold.set('1')
-        self.gamma_input = tk.Entry(self, width=7)
-        self.gamma_input.grid(row=4, column=2, pady=5)
-        
-        #create gamma button
-        self.gamma_button = tk.Button(self, text='Gamma Transform', height= 1, fg='black', bg='#d3d3d3')
-        self.gamma_button.grid(row=5, columnspan=3,  pady=(2,10))
-
-        filter_button_label = tk.Label(self, text='Spatial Filtering', font=('Helvetica Bold', 10), bg='#b0b0b0', pady=5)
-        filter_button_label.grid(row=6, column=0, columnspan=3)
-
-        # filter buttons
-        self.averaging_filter_button = tk.Button(self, text='AVE',width=7, height= 1)
-        self.averaging_filter_button.grid(row=7, column=0, padx=2)
-        self.median_filter_button = tk.Button(self, text='MED',width=7, height= 1)
-        self.median_filter_button.grid(row=7, column=1, padx=2)
-        self.highpass_filter_button = tk.Button(self, text='HIPASS',width=7, height= 1)
-        self.highpass_filter_button.grid(row=7, column=2, padx=2)
-        self.unsharp_masking_button = tk.Button(self, text='UNSHARP',width=7, height= 1)
-        self.unsharp_masking_button.grid(row=8, column=0, padx=2)
-        self.highboost_filter_button = tk.Button(self, text='HIBOOST',width=7, height= 1)
-        self.highboost_filter_button.grid(row=8, column=1, padx=2)
-        self.gradient_filter_button = tk.Button(self, text='EDGE',width=7, height= 1)
-        self.gradient_filter_button.grid(row=8, column=2, padx=2)
-        
-        # start disabled
-        self.disable_toolbar()
-        self.disable_slider()
-        
-    def get_scale_value(self):
-        return '{: }'.format(self.current_value.get())
-    
-    def slider_changed(self, event):
-        self.value.configure(text= self.get_scale_value())
-        self.bw_button.invoke()
-        
-    def enable_slider(self):
-        self.bw_slider['state'] = 'normal'
-
-    def enable_toolbar(self, pcx_image):
-        self.red_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'RED'), self.disable_slider()], state=tk.NORMAL)
-        self.green_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'GREEN'), self.disable_slider()], state=tk.NORMAL)
-        self.blue_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'BLUE'), self.disable_slider()], state=tk.NORMAL)
-        self.grey_scale_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'GREY'), self.disable_slider()], state=tk.NORMAL)
-        self.negative_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'NEG'), self.disable_slider()], state=tk.NORMAL)
-        self.gamma_button.configure(command= lambda: [self.check_entrybox(pcx_image),self.disable_slider()],state=tk.NORMAL)
-        self.bw_button.configure(command=lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'B/W', self.bw_slider.get()), self.enable_slider()] ,state=tk.NORMAL)
-        self.gamma_input.configure(state=tk.NORMAL)
-        self.gamma_input.insert(0, '1')
-        self.averaging_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'AVE'), self.disable_slider()], state=tk.NORMAL)
-        self.median_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'MED'), self.disable_slider()], state=tk.NORMAL)
-        self.highpass_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'HI'), self.disable_slider()], state=tk.NORMAL)
-        self.unsharp_masking_button.configure(command= lambda: [self.parent.parent.output_frame.display_transformed_image(pcx_image, 'UNSHARP'), self.disable_slider()], state=tk.NORMAL)
-        self.highboost_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'HIBOOST'), self.disable_slider()], state=tk.NORMAL)
-        self.gradient_filter_button.configure(command= lambda: [self.show_ask_popup(pcx_image, 'EDGE'), self.disable_slider()], state=tk.NORMAL)
-
-    def disable_slider(self):
-        self.bw_slider['state'] = 'disabled'
-    
-    def disable_toolbar(self):
-        self.red_button.config(state=tk.DISABLED)
-        self.green_button.config(state=tk.DISABLED)
-        self.blue_button.config(state=tk.DISABLED)
-        self.grey_scale_button.config(state=tk.DISABLED)
-        self.negative_button.config(state=tk.DISABLED)
-        self.bw_button.config(state=tk.DISABLED)
-        self.gamma_button.config(state=tk.DISABLED)
-        self.gamma_input.delete(0, "end")
-        self.gamma_input.config(state=tk.DISABLED)
-        self.averaging_filter_button.config(state=tk.DISABLED)
-        self.median_filter_button.config(state=tk.DISABLED)
-        self.highpass_filter_button.config(state=tk.DISABLED)
-        self.unsharp_masking_button.config(state=tk.DISABLED)
-        self.highboost_filter_button.config(state=tk.DISABLED)
-        self.gradient_filter_button.config(state=tk.DISABLED)
-        
-    def check_entrybox(self, pcx_image):
-        def isfloat(num):
-            try:
-                float(num)
-                return True
-            except ValueError:
-                return False
-            
-        input = self.gamma_input.get().strip()
-        if len(input) == 0:
-            messagebox.showerror('Error!', 'Invalid gamma value. Please input positive float/integer values')  
-        elif isfloat(input):
-            if float(input) == 0:
-                messagebox.showerror('Error!', 'Invalid gamma value. Please input positive float/integer values only')    
-            elif input[0] == '-':
-                messagebox.showerror('Error!', 'Please input positive float/integer values only')
+            current_frame.start_loading()
+            CURRENT_IMAGE = ImageParser.parse_image(filename)
+            current_frame.stop_loading()
+            main_notebook.select(0)
+            main_frame.display_image(
+                ImageProcessor.get_displayable_image(
+                    CURRENT_IMAGE["pixel_data"],
+                    CURRENT_IMAGE["width"],
+                    CURRENT_IMAGE["height"],
+                )
+            )
+            metadata_title.configure(text="Image Metadata")
+            metadata_label.configure(text=CURRENT_IMAGE["metadata"])
+            if CURRENT_IMAGE["palette_data"]:
+                palette_title.configure(text="Color Palette")
+                palette_image.display_image(
+                    ImageProcessor.get_displayable_palette(
+                        CURRENT_IMAGE["palette_data"], 10
+                    ),
+                    False,
+                    False,
+                )
+                palette_image.pack(pady=10)
             else:
-                self.parent.parent.output_frame.display_transformed_image(pcx_image, 'GAMMA', float(input))
-        else:
-            messagebox.showerror('Error!', 'Invalid gamma value.')
-    
-    def show_ask_popup(self, pcx_image, mode):
+                palette_title.configure(text="")
+                palette_image.remove_image()
+                palette_image.pack_forget()
+
+            GRAYSCALE_DATA = list(
+                ImageProcessor.get_grayscale_image(
+                    CURRENT_IMAGE["pixel_data"],
+                    CURRENT_IMAGE["width"],
+                    CURRENT_IMAGE["height"],
+                ).getdata()
+            )
+
+        except Exception as e:
+            current_frame.stop_loading()
+            messagebox.showerror("Error opening file", str(e))
+
+
+def process_image(mode):
+    current_frame = main_notebook.nametowidget(main_notebook.select())
+    try:
+        if not CURRENT_IMAGE:
+            raise Exception("Load an image first")
+
+        image_data = CURRENT_IMAGE["pixel_data"]
+        grayscale_data = GRAYSCALE_DATA
+        width = CURRENT_IMAGE["width"]
+        height = CURRENT_IMAGE["height"]
+        global LAST_NOISED_DATA
+        info = None
+        current_frame.start_loading()
+
         match mode:
-            case 'AVE':
-                input_val = simpledialog.askinteger('Averaging Filter', 'Enter side radius of desired mask (e.g., 1 for 3x3, 2 for 5x5)', initialvalue=1, minvalue=1, maxvalue=5)
-                if input_val != None:
-                    self.parent.parent.output_frame.display_transformed_image(pcx_image, 'AVE', input_val)
-            case 'MED':
-                input_val = simpledialog.askinteger('Median Filter', 'Enter side radius of desired mask (e.g., 1 for 3x3, 2 for 5x5)', initialvalue=1, minvalue=1, maxvalue=5)
-                if input_val != None:
-                    self.parent.parent.output_frame.display_transformed_image(pcx_image, 'MED', input_val)
-            case 'HI':
-                laplacian1 = '\t0\t1\t0\n\t1\t-4\t1\n\t0\t1\t0\n'
-                laplacian2 = '\t0\t-1\t0\n\t-1\t4\t-1\n\t0\t-1\t0\n'
-                laplacian3 = '\t1\t1\t1\n\t1\t-8\t1\n\t1\t1\t1\n'
-                laplacian4 = '\t-1\t-1\t-1\n\t-1\t8\t-1\n\t-1\t-1\t-1\n'
-                input_val = simpledialog.askinteger('Highpass Filter', f"Enter desired laplacian operator\n\n[1]{laplacian1}\n[2]{laplacian2}\n[3]{laplacian3}\n[4]{laplacian4}\n", initialvalue=1, minvalue=1, maxvalue=4)
-                if input_val != None:
-                    self.parent.parent.output_frame.display_transformed_image(pcx_image, 'HI', input_val)
-            case 'HIBOOST':
-                input_val = simpledialog.askfloat('Highboost Filter', 'Enter amplification (A) value', initialvalue=2, minvalue=1)
-                if input_val != None:
-                    self.parent.parent.output_frame.display_transformed_image(pcx_image, 'HIBOOST', input_val)
-            case 'EDGE':
-                input_val = simpledialog.askfloat('Gradient', 'Enter gradient to process\n[1] xy\n[2] x\n[3] y', initialvalue=1, minvalue=1, maxvalue=3)
-                if input_val != None:
-                    self.parent.parent.output_frame.display_transformed_image(pcx_image, 'EDGE', input_val)
-            
-            
-class MetaData (tk.Text):
-    """
-    the data retrieved from the Imported Image
-    """ 
+            case "Red Channel":
+                image = ImageProcessor.show_color_channel_images(
+                    image_data, width, height, "red"
+                )
+            case "Green Channel":
+                image = ImageProcessor.show_color_channel_images(
+                    image_data, width, height, "green"
+                )
+            case "Blue Channel":
+                image = ImageProcessor.show_color_channel_images(
+                    image_data, width, height, "blue"
+                )
+            case "Grayscale Transform":
+                image = ImageProcessor.get_grayscale_image(image_data, width, height)
+                info = "Transformation function: (r + g + b) / 3"
+            case "Negative Transform":
+                image = ImageProcessor.get_negative_image(grayscale_data, width, height)
+            case "Black and White Transform":
+                threshold = simpledialog.askinteger(
+                    mode,
+                    "Enter threshold value",
+                    initialvalue=0,
+                    minvalue=0,
+                    maxvalue=255,
+                )
+                if threshold == None:
+                    raise Exception("Cancelled operation")
+                image = ImageProcessor.get_black_and_white_image(
+                    grayscale_data, width, height, threshold
+                )
+                info = f"Threshold Value: {threshold}"
+            case "Gamma Transform":
+                gamma = simpledialog.askfloat(
+                    mode, "Enter gamma", initialvalue=1, minvalue=0
+                )
+                if gamma == None:
+                    raise Exception("Cancelled operation")
+                image = ImageProcessor.get_gamma_transformed_image(
+                    grayscale_data, width, height, gamma
+                )
+                info = f"Gamma: {gamma}"
+            case "Averaging Filter":
+                choices = ["3x3", "5x5", "7x7", "9x9"]
+                choices_map = [1, 2, 3, 4]
+                radius = ask_choice(
+                    root, mode, "Choose mask size", choices, choices_map
+                )
+                if radius == None:
+                    raise Exception("Cancelled operation")
+                image = ImageProcessor().get_average_filtered_image(
+                    grayscale_data, width, height, radius
+                )
+                info = f"Mask: {2*radius+1}x{2*radius+1}"
+            case "Median Filter":
+                choices = ["3x3", "5x5", "7x7", "9x9"]
+                choices_map = [1, 2, 3, 4]
+                radius = ask_choice(
+                    root, mode, "Choose mask size", choices, choices_map
+                )
+                if radius == None:
+                    raise Exception("Cancelled operation")
+                image = ImageProcessor().get_median_filtered_image(
+                    grayscale_data, width, height, radius
+                )
+                info = f"Mask: {2*radius+1}x{2*radius+1}"
+            case "Highpass Filter":
+                choices = [
+                    "[0, 1, 0, 1, -4, 1, 0, 1, 0]",
+                    "[0, -1, 0, -1, 4, -1, 0, -1, 0]",
+                    "[1, 1, 1, 1, -8, 1, 1, 1, 1]",
+                    "[-1, -1, -1, -1, 8, -1, -1, -1, -1]",
+                ]
+                choices_map = [1, 2, 3, 4]
+                filter = ask_choice(
+                    root, mode, "Choose laplacian filter", choices, choices_map
+                )
+                if filter == None:
+                    raise Exception("Cancelled operation")
+                image = ImageProcessor().get_highpass_filtered_image(
+                    grayscale_data, width, height, filter
+                )
+                info = f"Filter used: {choices[choices_map.index(filter)]}"
+            case "Unsharp Masking":
+                image = ImageProcessor().get_unsharp_masked_image(
+                    grayscale_data, width, height
+                )
+            case "Highboost Filter":
+                a = simpledialog.askfloat(
+                    mode, "Enter A value", initialvalue=2, minvalue=1
+                )
+                if a == None:
+                    raise Exception("Cancelled operation")
+                image = ImageProcessor().get_highboost_filtered_image(
+                    grayscale_data, width, height, a
+                )
+                info = f"A: {a}"
+            case "Image Gradient":
+                choices = ["both", "x", "y"]
+                choices_map = [1, 2, 3]
+                direction = ask_choice(
+                    root, mode, "Choose gradient direction", choices, choices_map
+                )
+                if direction == None:
+                    raise Exception("Cancelled operation")
+                image = ImageProcessor().get_image_gradient(
+                    grayscale_data, width, height, direction
+                )
+                info = f"Gradient direction: {choices[choices_map.index(direction)]}"
+            case "Salt and Pepper Noise":
+                probability = simpledialog.askfloat(
+                    mode,
+                    "Enter salt and pepper probability",
+                    initialvalue=0,
+                    minvalue=0,
+                    maxvalue=0.5,
+                )
+                if probability == None:
+                    raise Exception("Cancelled operation")
+                image = ImageProcessor.apply_salt_pepper(
+                    grayscale_data, width, height, probability
+                )
+                info = f"Salt and pepper probability: {probability}"
+                LAST_NOISED_DATA = list(image.getdata())
+            case "Gaussian Noise":
+                image = ImageProcessor.apply_gaussian(grayscale_data, width, height)
+                LAST_NOISED_DATA = list(image.getdata())
+            case "Erlang Noise":
+                image = ImageProcessor.apply_erlang(grayscale_data, width, height)
+                LAST_NOISED_DATA = list(image.getdata())
+            case "Geometric Mean Filter":
+                if not LAST_NOISED_DATA:
+                    raise Exception("Perform an image degradation operation first.")
+                image = ImageProcessor().add_geometric_filter(
+                    width, height, LAST_NOISED_DATA
+                )
+            case "Contraharmonic Mean Filter":
+                if not LAST_NOISED_DATA:
+                    raise Exception("Perform an image degradation operation first.")
+                q = simpledialog.askinteger(mode, "Enter q value", initialvalue=0)
+                if q == None:
+                    raise Exception("Cancelled operation")
+                image = ImageProcessor().add_contraharmonic(
+                    width, height, LAST_NOISED_DATA, -1
+                )
+                info = f"q value: {q}"
+            case "Order-Statistics Filter":
+                if not LAST_NOISED_DATA:
+                    raise Exception("Perform an image degradation operation first.")
+                image = ImageProcessor().get_median_filtered_image(
+                    LAST_NOISED_DATA, width, height
+                )
+                info = "Filter used: 3x3 median filter"
+            case "Run-length Encoding":
+                rle_data, palette, size_info = ImageProcessor.run_length_encoding(
+                    image_data
+                )
+                image = ImageProcessor.run_length_decode(
+                    rle_data, palette, width, height
+                )
+                orig_info = ImageProcessor.get_uncompressed_image_size(image_data)
+                info = "Uncompressed Image Information\n"
+                info += f"Image size: {orig_info["image size"]} bytes\n"
+                info += f"Palette size: {orig_info["palette size"]} bytes\n"
+                info += "\nRun-length Encoded Image Information\n"
+                info += f"Image size: {size_info["image size"]} bytes\n"
+                info += f"Palette size: {size_info["palette size"]} bytes\n"
+                info += f"\nCompression ratio: {orig_info["image size"] / size_info["image size"]}"
+            case "Huffman Coding":
+                huffman_data, huffman_codes, size_info = ImageProcessor.huffman_coding(
+                    image_data
+                )
+                image = ImageProcessor.huffman_decode(
+                    huffman_data, huffman_codes, width, height
+                )
+                orig_info = ImageProcessor.get_uncompressed_image_size(image_data)
+                info = "Uncompressed Image Information\n"
+                info += f"Image size: {orig_info["image size"]} bytes\n"
+                info += f"Palette size: {orig_info["palette size"]} bytes\n"
+                info += "\nRun-length Encoded Image Information\n"
+                info += f"Image size: {size_info["image size"]} bytes\n"
+                info += f"Huffman codes size: {size_info["huffman codes size"]} bytes\n"
+                info += f"\nCompression ratio: {orig_info["image size"] / size_info["image size"]}"
 
-    def __init__(self, parent):
-        #initialize
-        self.parent = parent
-        self.scroll = None
-        super().__init__(parent)
-        self.separator = ttk.Separator(parent, orient='horizontal')
-        self.remove_display()
-        
-    def display_all(self, image:PcxImage):
-        if self.scroll == None:
-            self.scroll = ttk.Scrollbar(self.parent, command=self.yview)
-            self.scroll.pack(side=tk.RIGHT, fill=tk.Y)
+            case _:
+                current_frame.stop_loading()
+                return
 
-        header = "IMAGE METADATA:\n\n"
-        all_data = (
-            f"File Name: {image.location}\n"
-            f"Manufacturer: {image.get_manufacturer()}\n"
-            f"Version: {image.get_version()}\n"
-            f"Encoding: {image.get_encoding()}\n"
-            f"Bits per Pixel: {image.get_bits_per_pixel()}\n"
-            f"Image Dimensions: {image.get_window()}\n"
-            f"HDPI: {image.get_hdpi()}\n"
-            f"VDPI: {image.get_vdpi()}\n"
-            f"Number of Color Planes: {image.get_n_planes()}\n"
-            f"Bytes per Line: {image.get_bytes_per_line()}\n"
-            f"Palette Information: {image.get_palette_info()}\n"
-            f"Horizontal Screen Size: {image.get_h_screen_size()}\n"
-            f"Vertical Screen Size: {image.get_v_screen_size()}"
-        )
-        self.configure(state=tk.NORMAL)
-        self.delete('1.0', tk.END)
-        self.insert('1.0', header + all_data)
-        self.configure(bg='#B0B0B0', font=('Helvetica', 10), padx=10, pady=10, width=25, relief='flat', state='disabled', yscrollcommand=self.scroll.set)
-        self.separator.pack(side= tk.BOTTOM, fill='x')
-        self.pack(side = tk.BOTTOM, expand=True)
-        
-    def remove_display(self): 
-        self.separator.pack_forget()
-        if self.scroll != None:
-            self.scroll.destroy()
-            self.scroll = None
-        self.pack_forget()
+        current_frame.stop_loading()
+        new_frame = ImageFrame(main_notebook, title=mode, info=info)
+        new_frame.pack(fill="both", expand=True)
+        if len(main_notebook.tabs()) >= 5:
+            main_notebook.forget(1)
+        main_notebook.add(new_frame, text=mode)
+        main_notebook.select(new_frame)
+        new_frame.display_image(image)
+    except Exception as e:
+        current_frame.stop_loading()
+        if str(e) != "Cancelled operation":
+            messagebox.showerror("Error", str(e))
 
-class PaletteFrame(tk.LabelFrame):
-    """
-    Contains the color palette used in the .pcx image
-    """
-    def __init__(self, parent):
-        #initialize
-        super().__init__(parent)
-        self.parent = parent
-        self.pack(side = tk.BOTTOM, expand=True,padx=10, pady=10)
-        self.label = tk.Label(self)
-        self.configure(relief="flat", bg='#B0B0B0')
-        
-    
-    #displays the color palette of the image
-    def display_palette(self, image):
-        self.configure(labelanchor='n', text="COLOR PALETTE", font=('Helvetica Bold', 10))
-        image = ImageTk.PhotoImage(image)
-        self.label['image'] = image
-        self.label.image = image
-        self.label.pack()
 
-    def remove_palette(self):
-        self.label.pack_forget()
-        self.configure(labelanchor='n', text="", font=('Helvetica Bold', 10))
-        self.label['image'] = None
-        self.label.image = None
+########## PLACEMENT OF UI ELEMENTS ##########
 
-App("IVP App", "1280x720", True)
+# setup the root of the app
+root = tk.Tk()
+root.title("Image Processing App")
+root.geometry("1280x720")
+root.state("zoomed")
+
+# configure styling
+# ttk.Style().configure("TFrame", background="#121212")
+
+##### setup menu buttons
+menubar = tk.Menu(root)
+root.config(menu=menubar)
+
+file_menu = tk.Menu(menubar, tearoff=False)
+file_menu.add_command(label="Open image", command=open_file)
+menubar.add_cascade(label="File", menu=file_menu)
+menubar.add_command(label="About...", command=show_about)
+
+##### setup main frame
+main_notebook = ttk.Notebook(root)
+main_notebook.pack(side="left", fill="both", expand=True)
+
+main_frame = ImageFrame(main_notebook, closable=False)
+main_frame.pack(fill="both", expand=True)
+
+main_notebook.add(main_frame, text="Original")
+
+##### setup sidebar frame
+sidebar = ttk.Notebook(root, width=200)
+sidebar.pack(side="right", fill="y")
+
+buttons_frame = ttk.Frame(sidebar, relief="solid", padding=10)
+buttons_frame.pack(fill="both", expand=True)
+metadata_frame = ttk.Frame(sidebar, relief="solid", padding=10)
+metadata_frame.pack(fill="both", expand=True)
+
+sidebar.add(buttons_frame, text="Edit")
+sidebar.add(metadata_frame, text="Metadata")
+
+# setup sidebar buttons
+# color buttons
+dark_btn_icon = IvpBtnIcon.black()
+color_btn_label = ttk.Label(buttons_frame, text="Color Channels")
+red_btn_icon = IvpBtnIcon.red()
+red_btn = ToolTipButton(
+    buttons_frame,
+    image=red_btn_icon,
+    tooltip="Red Channel",
+    command=lambda: process_image("Red Channel"),
+)
+green_btn_icon = IvpBtnIcon.green()
+green_btn = ToolTipButton(
+    buttons_frame,
+    image=green_btn_icon,
+    tooltip="Green Channel",
+    command=lambda: process_image("Green Channel"),
+)
+blue_btn_icon = IvpBtnIcon.blue()
+blue_btn = ToolTipButton(
+    buttons_frame,
+    image=blue_btn_icon,
+    tooltip="Blue Channel",
+    command=lambda: process_image("Blue Channel"),
+)
+# image transform buttons
+img_trans_label = ttk.Label(buttons_frame, text="Image Transformation")
+gray_btn_icon = IvpBtnIcon.grayscale()
+gray_btn = ToolTipButton(
+    buttons_frame,
+    image=gray_btn_icon,
+    tooltip="Grayscale Transform",
+    command=lambda: process_image("Grayscale Transform"),
+)
+neg_btn_icon = IvpBtnIcon.black()
+neg_btn = ToolTipButton(
+    buttons_frame,
+    image=neg_btn_icon,
+    tooltip="Negative Transform",
+    text="+/-",
+    command=lambda: process_image("Negative Transform"),
+)
+bnw_btn_icon = IvpBtnIcon.black_and_white()
+bnw_btn = ToolTipButton(
+    buttons_frame,
+    image=bnw_btn_icon,
+    tooltip="Black and White Transform",
+    command=lambda: process_image("Black and White Transform"),
+)
+gamma_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Gamma Transform",
+    text="γ",
+    command=lambda: process_image("Gamma Transform"),
+)
+# spatial filter buttons
+filter_label = ttk.Label(buttons_frame, text="Spatial Filtering")
+ave_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Averaging Filter",
+    text="x̄",
+    command=lambda: process_image("Averaging Filter"),
+)
+med_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Median Filter",
+    text="x͂",
+    command=lambda: process_image("Median Filter"),
+)
+hipass_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Highpass Filter",
+    text="HI",
+    command=lambda: process_image("Highpass Filter"),
+)
+unsharp_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Unsharp Masking",
+    text="U",
+    command=lambda: process_image("Unsharp Masking"),
+)
+hiboost_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Highboost Filter",
+    text="HB",
+    command=lambda: process_image("Highboost Filter"),
+)
+gradient_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Image Gradient",
+    text="G",
+    command=lambda: process_image("Image Gradient"),
+)
+# image degradation buttons
+img_deg_label = ttk.Label(buttons_frame, text="Image Degradation")
+salt_pepper_btn_icon = IvpBtnIcon.salt_and_pepper()
+salt_pepper_btn = ToolTipButton(
+    buttons_frame,
+    image=salt_pepper_btn_icon,
+    tooltip="Salt and Pepper Noise",
+    command=lambda: process_image("Salt and Pepper Noise"),
+)
+gauss_btn_icon = IvpBtnIcon.gauss()
+gauss_btn = ToolTipButton(
+    buttons_frame,
+    image=gauss_btn_icon,
+    tooltip="Gaussian Noise",
+    command=lambda: process_image("Gaussian Noise"),
+)
+erlang_btn_icon = IvpBtnIcon.erlang()
+erlang_btn = ToolTipButton(
+    buttons_frame,
+    image=erlang_btn_icon,
+    tooltip="Erlang Noise",
+    command=lambda: process_image("Erlang Noise"),
+)
+# image restoration buttons
+img_res_label = ttk.Label(buttons_frame, text="Image Restoration")
+geometric_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Geometric Mean Filter",
+    text="Π",
+    command=lambda: process_image("Geometric Mean Filter"),
+)
+contraharm_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Contraharmonic Mean Filter",
+    text="Σ/Σ",
+    command=lambda: process_image("Contraharmonic Mean Filter"),
+)
+ordstat_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Order-Statistics Filter",
+    text="x͂",
+    command=lambda: process_image("Order-Statistics Filter"),
+)
+# image compression buttons
+img_comp_label = ttk.Label(buttons_frame, text="Image Compression")
+rle_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Run-length Encoding",
+    text="RLE",
+    command=lambda: process_image("Run-length Encoding"),
+)
+huffman_btn = ToolTipButton(
+    buttons_frame,
+    image=dark_btn_icon,
+    tooltip="Huffman Coding",
+    text="HC",
+    command=lambda: process_image("Huffman Coding"),
+)
+
+# display the sidebar elements
+pady = 2
+color_btn_label.grid(column=0, row=0, columnspan=3, pady=5, sticky="w")
+red_btn.grid(column=0, row=1, padx=5, pady=pady)
+green_btn.grid(column=1, row=1, padx=5, pady=pady)
+blue_btn.grid(column=2, row=1, padx=5, pady=pady)
+img_trans_label.grid(column=0, row=2, columnspan=3, pady=5, sticky="w")
+gray_btn.grid(column=0, row=3, padx=5, pady=pady)
+neg_btn.grid(column=1, row=3, padx=5, pady=pady)
+bnw_btn.grid(column=2, row=3, padx=5, pady=pady)
+gamma_btn.grid(column=0, row=4, padx=5, pady=pady)
+filter_label.grid(column=0, row=5, columnspan=3, pady=5, sticky="w")
+ave_btn.grid(column=0, row=6, padx=5, pady=pady)
+med_btn.grid(column=1, row=6, padx=5, pady=pady)
+hipass_btn.grid(column=2, row=6, padx=5, pady=pady)
+unsharp_btn.grid(column=0, row=7, padx=5, pady=pady)
+hiboost_btn.grid(column=1, row=7, padx=5, pady=pady)
+gradient_btn.grid(column=2, row=7, padx=5, pady=pady)
+img_deg_label.grid(column=0, row=8, columnspan=3, pady=5, sticky="w")
+salt_pepper_btn.grid(column=0, row=9, padx=5, pady=pady)
+gauss_btn.grid(column=1, row=9, padx=5, pady=pady)
+erlang_btn.grid(column=2, row=9, padx=5, pady=pady)
+img_res_label.grid(column=0, row=10, columnspan=3, pady=5, sticky="w")
+geometric_btn.grid(column=0, row=11, padx=5, pady=pady)
+contraharm_btn.grid(column=1, row=11, padx=5, pady=pady)
+ordstat_btn.grid(column=2, row=11, padx=5, pady=pady)
+img_comp_label.grid(column=0, row=12, columnspan=3, pady=5, sticky="w")
+rle_btn.grid(column=0, row=13, padx=5, pady=pady)
+huffman_btn.grid(column=1, row=13, padx=5, pady=pady)
+
+# setup metadata elements
+metadata_title = ttk.Label(metadata_frame, text="Open an image first")
+metadata_label = ttk.Label(metadata_frame, wraplength=170)
+palette_title = ttk.Label(metadata_frame)
+palette_image = ImageFrame(metadata_frame, closable=False)
+metadata_title.pack(anchor="nw")
+metadata_label.pack(anchor="nw", pady=(10, 25))
+palette_title.pack(anchor="nw")
+
+# start app
+root.mainloop()

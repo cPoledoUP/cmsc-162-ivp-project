@@ -239,6 +239,37 @@ def process_image(mode):
                     LAST_NOISED_DATA, width, height
                 )
                 info = "Filter used: 3x3 median filter"
+            case "Run-length Encoding":
+                rle_data, palette, size_info = ImageProcessor.run_length_encoding(
+                    image_data
+                )
+                image = ImageProcessor.run_length_decode(
+                    rle_data, palette, width, height
+                )
+                orig_info = ImageProcessor.get_uncompressed_image_size(image_data)
+                info = "Uncompressed Image Information\n"
+                info += f"Image size: {orig_info["image size"]} bytes\n"
+                info += f"Palette size: {orig_info["palette size"]} bytes\n"
+                info += "\nRun-length Encoded Image Information\n"
+                info += f"Image size: {size_info["image size"]} bytes\n"
+                info += f"Palette size: {size_info["palette size"]} bytes\n"
+                info += f"\nCompression ratio: {orig_info["image size"] / size_info["image size"]}"
+            case "Huffman Coding":
+                huffman_data, huffman_codes, size_info = ImageProcessor.huffman_coding(
+                    image_data
+                )
+                image = ImageProcessor.huffman_decode(
+                    huffman_data, huffman_codes, width, height
+                )
+                orig_info = ImageProcessor.get_uncompressed_image_size(image_data)
+                info = "Uncompressed Image Information\n"
+                info += f"Image size: {orig_info["image size"]} bytes\n"
+                info += f"Palette size: {orig_info["palette size"]} bytes\n"
+                info += "\nRun-length Encoded Image Information\n"
+                info += f"Image size: {size_info["image size"]} bytes\n"
+                info += f"Huffman codes size: {size_info["huffman codes size"]} bytes\n"
+                info += f"\nCompression ratio: {orig_info["image size"] / size_info["image size"]}"
+
             case _:
                 current_frame.stop_loading()
                 return

@@ -1,9 +1,8 @@
-from PIL import Image, ImageDraw, ImageTk
+from PIL import Image, ImageDraw
 
 # from pcx_parser import PcxImage
 import random
 import numpy as np
-from matplotlib import pyplot as plt
 
 
 class ImageProcessor:

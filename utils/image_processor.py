@@ -723,6 +723,25 @@ class ImageProcessor:
         return disp_img
 
     def huffman_coding(image_data):
+        class Node:
+            def __init__(self, value, key=None, left=None, right=None) -> None:
+                self.value = value
+                self.key = key
+                self.left = left
+                self.right = right
+
+            def print_self(self):
+                print(
+                    "Value",
+                    self.value,
+                    "Key",
+                    self.key,
+                    "Left",
+                    self.left,
+                    "Right",
+                    self.right,
+                )
+
         # create frequency table
         freq_table = dict()
         for data in image_data:
@@ -733,29 +752,41 @@ class ImageProcessor:
         freq_table = dict(sorted(freq_table.items(), key=lambda item: item[1]))
 
         # create the huffman codes
-        heap = list()
-        for key in freq_table:
-            heap.append([key, freq_table[key]])
+        heap = [Node(freq_table[key], key) for key in freq_table]
         # create the tree
-        while len(heap) > 1:
+        while 1:
             left = heap.pop(0)
             right = heap.pop(0)
-            entry = [left, left[1] + right[1], right]
-            heap.append(entry)
-            heap.sort(key=lambda item: item[1])
+            entry = Node(left.value + right.value, left=left, right=right)
+            for i in range(len(heap)):
+                if heap[i].value > entry.value:
+                    heap.insert(i, entry)
+                    break
+                if i == len(heap) - 1:
+                    heap.append(entry)
+            if len(heap) == 0:
+                heap = [entry]
+                break
 
         # map the codes
         huffman_codes = dict()
-        heap[0][1] = ""
+        heap[0].key = ""
         while len(heap) > 0:
             node = heap.pop()
-            if len(node) == 3:
-                node[0][1] = node[1] + "0"
-                node[2][1] = node[1] + "1"
-                heap.append(node[0])
-                heap.append(node[2])
-            elif len(node) == 2:
-                huffman_codes[node[0]] = node[1]
+            left = node.left
+            right = node.right
+            if left:
+                if left.key:
+                    huffman_codes[left.key] = "".join([node.key, "0"])
+                else:
+                    left.key = "".join([node.key, "0"])
+                    heap.append(left)
+            if right:
+                if right.key:
+                    huffman_codes[right.key] = "".join([node.key, "1"])
+                else:
+                    right.key = "".join([node.key, "1"])
+                    heap.append(right)
 
         # convert the image pixels to huffman codes
         huffman_coded_image_data = ""

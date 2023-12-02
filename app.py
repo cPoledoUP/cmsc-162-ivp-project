@@ -232,7 +232,7 @@ def process_image(mode):
             case "Contraharmonic Mean Filter":
                 if not LAST_NOISED_DATA:
                     raise Exception("Perform an image degradation operation first.")
-                q = simpledialog.askinteger(mode, "Enter q value", initialvalue=0)
+                q = simpledialog.askfloat(mode, "Enter q value", initialvalue=0)
                 if q == None:
                     raise Exception("Cancelled operation")
                 image = ImageProcessor().add_contraharmonic(

@@ -263,14 +263,14 @@ class PcxImage:
 
         return self.filler
 
-    def process_image_data(self) -> None:
-        """
-        Processes the image data (and possible eof palette) of the pcx file
+    def process_image_data(self) -> dict[str, int | list[tuple[int, int, int]] | str]:
+        """Processes the pcx file
 
-        Raises
-        ------
-        Exception
-            if inputted image is not an rgb image
+        Raises:
+            Exception: pcx file cannot be parsed by the program
+
+        Returns:
+            dict[str, int | list[tuple[int, int, int]] | str]: image information
         """
 
         # https://people.sc.fsu.edu/~jburkardt/txt/pcx_format.txt
@@ -371,6 +371,14 @@ class ImageParser:
     def parse_image(
         location: str,
     ) -> dict[str, int | list[tuple[int, int, int] | int] | str]:
+        """General image parser function
+
+        Args:
+            location (str): location of the image
+
+        Returns:
+            dict[str, int | list[tuple[int, int, int] | int] | str]: image information
+        """
         if location.endswith("pcx"):
             return PcxImage(location).process_image_data()
 

@@ -1,18 +1,39 @@
 from PIL import Image, ImageDraw
-
-# from pcx_parser import PcxImage
 import random
 import numpy as np
 
 
 class ImageProcessor:
-    def get_displayable_image(image_data: list, width: int, height: int):
+    def get_displayable_image(
+        image_data: list[tuple[int, int, int]], width: int, height: int
+    ) -> Image:
+        """get displayable image
+
+        Args:
+            image_data (list[tuple[int, int, int]]): image data
+            width (int): image width
+            height (int): image height
+
+        Returns:
+            Image: displayable image
+        """
         img = Image.new("RGB", (width, height))
         img.putdata(image_data)
 
         return img
 
-    def get_displayable_palette(palette_data, pixel_length: int) -> Image:
+    def get_displayable_palette(
+        palette_data: list[tuple[int, int, int]], pixel_length: int
+    ) -> Image:
+        """get displayable palette
+
+        Args:
+            palette_data (list[tuple[int, int, int]]): palette data
+            pixel_length (int): pixel size for each color in palette
+
+        Returns:
+            Image: displayable palette
+        """
         target_size = 16
 
         image = Image.new(
@@ -35,19 +56,19 @@ class ImageProcessor:
 
         return image
 
-    def show_color_channel_images(image_data, width, height, color: str) -> Image:
-        """
-        Returns a color channel of the pcx image as displayable image
+    def show_color_channel_images(
+        image_data: list[tuple[int, int, int]], width: int, height: int, color: str
+    ) -> Image:
+        """Returns a color channel of the pcx image as displayable image
 
-        Parameters
-        ----------
-        color : str
-            'red', 'green', 'blue'
+        Args:
+            image_data (list[tuple[int, int, int]]): image data
+            width (int): image width
+            height (int): image height
+            color (str): color channel
 
-        Returns
-        -------
-        Image
-            pcx image using only one color channel
+        Returns:
+            Image: image using one color channel
         """
         color_data = []
 
@@ -76,18 +97,19 @@ class ImageProcessor:
 
         return disp_img
 
-    def get_grayscale_image(image_data, width, height) -> Image:
-        """
-        Returns a grayscale transformed version of the pcx image as a displayable image
+    def get_grayscale_image(
+        image_data: list[tuple[int, int, int]], width: int, height: int
+    ) -> Image:
+        """Returns a grayscale transformed version of the pcx image as a displayable image
         & the data of the grayscale transformed image
 
-        Returns
-        -------
-        Image
-            a grayscale image
+        Args:
+            image_data (list[tuple[int, int, int]]): image data
+            width (int): image width
+            height (int): image height
 
-        List
-            data of the grayscale image
+        Returns:
+            Image: grayscale image
         """
 
         grayscale_image_data = list()
@@ -100,14 +122,18 @@ class ImageProcessor:
 
         return disp_img
 
-    def get_negative_image(grayscale_data, width, height) -> Image:
-        """
-        Returns a negative transformed version of the pcx image as a displayable image
+    def get_negative_image(
+        grayscale_data: list[tuple[int, int, int]], width: int, height: int
+    ) -> Image:
+        """Returns a negative transformed version of the pcx image as a displayable image
 
-        Returns
-        -------
-        Image
-            a negative transformed pcx image
+        Args:
+            grayscale_data (list[tuple[int, int, int]]): grayscale data
+            width (int): image width
+            height (int): image height
+
+        Returns:
+            Image: negative image
         """
 
         negative_image_data = list()
@@ -121,20 +147,21 @@ class ImageProcessor:
         return disp_img
 
     def get_black_and_white_image(
-        grayscale_data, width, height, threshold: int
+        grayscale_data: list[tuple[int, int, int]],
+        width: int,
+        height: int,
+        threshold: int,
     ) -> Image:
-        """
-        Returns a black and white transformed version of the pcx image as a displayable image
+        """Returns a black and white transformed version of the pcx image as a displayable image
 
-        Parameters
-        ----------
-        threshold : int
-            range of [0, 255], threshold to determine white and black pixels
+        Args:
+            grayscale_data (list[tuple[int, int, int]]): grayscale data
+            width (int): image width
+            height (int): image height
+            threshold (int): black and white threshold
 
-        Returns
-        -------
-        Image
-            a black and white transformed pcx image
+        Returns:
+            Image: black and white image
         """
 
         bnw_image_data = list()
@@ -151,20 +178,21 @@ class ImageProcessor:
         return disp_img
 
     def get_gamma_transformed_image(
-        grayscale_data, width, height, gamma: float
+        grayscale_data: list[tuple[int, int, int]],
+        width: int,
+        height: int,
+        gamma: float,
     ) -> Image:
-        """
-        Returns a black and white transformed version of the pcx image as a displayable image
+        """Returns a gamma transformed version of the pcx image as a displayable image
 
-        Parameters
-        ----------
-        gamma : float
-            a positive floating point value for gamma transform
+        Args:
+            grayscale_data (list[tuple[int, int, int]]): grayscale data
+            width (int): image width
+            height (int): image height
+            gamma (float): gamma value
 
-        Returns
-        -------
-        Image
-            a gamma transformed pcx image
+        Returns:
+            Image: gamma transformed image
         """
 
         gamma_image_data = list()
@@ -180,29 +208,25 @@ class ImageProcessor:
 
     def get_neighbors(
         self,
-        grayscale_data,
-        width,
-        height,
+        grayscale_data: list[tuple[int, int, int]],
+        width: int,
+        height: int,
         coordinates: tuple,
         radius: int = 1,
         pad: int = 0,
     ) -> list:
-        """
-        Returns the neighboring pixels of a given pixel coordinate
+        """Returns the neighboring pixels of a given pixel coordinate
 
-        Parameters:
-        -----------
-        coordinates : tuple
-            coordinates of the pixel as (x, y)
-        radius : int
-            radius of the neighboring area to get (default: 1 (or 3x3 area))
-        pad : int
-            value for out of bounds pixels (default: 0)
+        Args:
+            grayscale_data (list[tuple[int, int, int]]): grayscale data
+            width (int): image width
+            height (int): image height
+            coordinates (tuple): coordinates of the pixel as (x, y)
+            radius (int, optional):  radius of the neighboring area to get. Defaults to 1.
+            pad (int, optional): value for out of bounds pixels. Defaults to 0.
 
         Returns:
-        --------
-        list
-            the neighboring pixels as a list
+            list: the neighboring pixels as a list
         """
 
         neighbors = list()
@@ -220,21 +244,22 @@ class ImageProcessor:
 
     # Image functions
     def get_average_filtered_image(
-        self, grayscale_data, width, height, radius: int = 1
+        self,
+        grayscale_data: list[tuple[int, int, int]],
+        width: int,
+        height: int,
+        radius: int = 1,
     ) -> Image:
-        """
-        Function to get the average-filtered (blur) image
+        """Function to get the average-filtered (blur) image
 
-        Parameters:
-        ------------
-        radius : int
-            number of pixels away from each coordinate to be used in the function (mask size)
+        Args:
+            grayscale_data (list[tuple[int, int, int]]): grayscale data
+            width (int): image width
+            height (int): image height
+            radius (int, optional): filter radius. Defaults to 1.
 
         Returns:
-        ------------
-        Image
-            An average-filtered image (blurred)
-
+            Image: average filtered image
         """
         # stores the calculated values of the average-filtered image
         filtered_image = list()
@@ -252,20 +277,22 @@ class ImageProcessor:
         return disp_img
 
     def get_median_filtered_image(
-        self, grayscale_data, width, height, radius: int = 1
+        self,
+        grayscale_data: list[tuple[int, int, int]],
+        width: int,
+        height: int,
+        radius: int = 1,
     ) -> Image:
-        """
-        Creates an median-filtered version of a grayscale version of an image
+        """Creates an median-filtered version of a grayscale version of an image
 
-        Parameters
-        ----------
-        radius : int
-            Determines the mask size to be used in the filter
+        Args:
+            grayscale_data (list[tuple[int, int, int]]): grayscale data
+            width (int): image width
+            height (int): image height
+            radius (int, optional): mask radius. Defaults to 1.
 
-        Returns
-        -------
-        Image
-            median-filtered grayscale image
+        Returns:
+            Image: median filtered image
         """
 
         filtered_image = []
@@ -291,20 +318,22 @@ class ImageProcessor:
         return disp_img
 
     def get_highpass_filtered_image(
-        self, grayscale_data, width, height, filter: int = 1
+        self,
+        grayscale_data: list[tuple[int, int, int]],
+        width: int,
+        height: int,
+        filter: int = 1,
     ) -> Image:
-        """
-        Returns a laplacian transformed version of the image
+        """Returns a laplacian transformed version of the image
 
-        Parameters
-        ----------
-        filter : int
-            Used to determine which of the available filters to use
+        Args:
+            grayscale_data (list[tuple[int, int, int]]): grayscale data
+            width (int): image width
+            height (int): image height
+            filter (int, optional): laplacian filter to use. Defaults to 1.
 
-        Returns
-        -------
-        Image
-            Laplacian transformed image
+        Returns:
+            Image: highpass filtered image
         """
 
         # check which filter to use
@@ -390,15 +419,19 @@ class ImageProcessor:
 
         return disp_img
 
-    def get_unsharp_masked_image(self, grayscale_data, width, height) -> Image:
-        """
-        Unsharps (sharpens) an image using the formula
+    def get_unsharp_masked_image(
+        self, grayscale_data: list[tuple[int, int, int]], width: int, height: int
+    ) -> Image:
+        """Unsharps (sharpens) an image using the formula
         Unsharped_image = Grayscale_image + k * (Grayscale_image - average_filtered_image())
 
-        Returns
-        -------
-        Image
-            The Unsharped image
+        Args:
+            grayscale_data (list[tuple[int, int, int]]): grayscale data
+            width (int): image width
+            height (int): image height
+
+        Returns:
+            Image: unsharped image
         """
 
         blurred_image = list(
@@ -421,21 +454,23 @@ class ImageProcessor:
         return disp_img
 
     def get_highboost_filtered_image(
-        self, grayscale_data, width, height, A: float = 1
+        self,
+        grayscale_data: list[tuple[int, int, int]],
+        width: int,
+        height: int,
+        A: float = 1,
     ) -> Image:
-        """
-        returns a highboost filtered version of the image using the formula:
+        """returns a highboost filtered version of the image using the formula:
         highboosted_image = (A-1)Original + Highpass(1) where A is the intensity
 
-        Parameters
-        ----------
-        A : float
-            determines the intensity of the highboost filter to be applied
+        Args:
+            grayscale_data (list[tuple[int, int, int]]): grayscale data
+            width (int): image width
+            height (int): image height
+            A (float, optional): highboost filter intensity. Defaults to 1.
 
-        Returns
-        -------
-        Image
-            highboost filtered version of the image
+        Returns:
+            Image: highboost filtered image
         """
 
         highpassed_image = list(
@@ -452,19 +487,23 @@ class ImageProcessor:
 
         return disp_img
 
-    def get_image_gradient(self, grayscale_data, width, height, mode: int = 1) -> Image:
-        """
-        Returns an image processed with Sobel operator
+    def get_image_gradient(
+        self,
+        grayscale_data: list[tuple[int, int, int]],
+        width: int,
+        height: int,
+        mode: int = 1,
+    ) -> Image:
+        """Returns an image processed with Sobel operator
 
-        Parameters
-        ----------
-        mode : int
-            1 for combined, 2 for x, 3 for y
+        Args:
+            grayscale_data (list[tuple[int, int, int]]): grayscale data
+            width (int): image width
+            height (int): image height
+            mode (int, optional): gradient direction. Defaults to 1.
 
-        Returns
-        -------
-        Image
-            image processed with sobel operator
+        Returns:
+            Image: image gradient
         """
 
         sobel_operator_x = [-1, 0, 1, -2, 0, 2, -1, 0, 1]
@@ -511,16 +550,19 @@ class ImageProcessor:
 
         return disp_img
 
-    def apply_salt_pepper(grayscale_data, width, height, probability: float):
-        """
-        Applies salt and pepper noise to a grayscale equivalent of the image
+    def apply_salt_pepper(
+        grayscale_data: list[int], width: int, height: int, probability: float
+    ) -> Image:
+        """Apply salt and pepper noise to the image
 
         Args:
-            salt_probability (float): probability of salt
-            pepper_probability (float): probability of pepper
+            grayscale_data (list[int]): grayscale image data
+            width (int): width of the image
+            height (int): height of the image
+            probability (float): probability for the noise
 
         Returns:
-            _type_: image
+            Image: noised image
         """
 
         salt_pepper_values = []
@@ -540,12 +582,16 @@ class ImageProcessor:
 
         return disp_img
 
-    def apply_gaussian(grayscale_data, width, height):
-        """
-        Applies Gaussian noise to a grayscale equivalent of the image
+    def apply_gaussian(grayscale_data: list[int], width: int, height: int) -> Image:
+        """Apply gaussian noise to the image
+
+        Args:
+            grayscale_data (list[int]): grayscale image data
+            width (int): width of the image
+            height (int): height of the image
 
         Returns:
-            _type_: Image
+            Image: noised image
         """
 
         mean = 0  # responsible for the bell curved shape of the distribution
@@ -563,12 +609,16 @@ class ImageProcessor:
 
         return disp_img
 
-    def apply_erlang(grayscale_data, width, height):
-        """
-        Applies Gamma noise to a grayscale equivalent of the image
+    def apply_erlang(grayscale_data: list[int], width: int, height: int) -> Image:
+        """Apply erlang noise to the image
+
+        Args:
+            grayscale_data (list[int]): grayscale image data
+            width (int): width of the image
+            height (int): height of the image
 
         Returns:
-            _type_: Image
+            Image: noised image
         """
 
         alpha = 2  # controls the shape of the noise distribution | amount of noise
@@ -587,15 +637,18 @@ class ImageProcessor:
 
         return disp_img
 
-    def add_geometric_filter(self, width, height, noise_degraded_img):
-        """
-        performs geometric filter restoration technique to the noised image
+    def add_geometric_filter(
+        self, width: int, height: int, noise_degraded_img: list[int]
+    ) -> Image:
+        """performs geometric filter restoration technique to the noised image
 
         Args:
-            noise_degraded_img ( Image ): noised image
+            width (int): width of the image
+            height (int): height of the image
+            noise_degraded_img (list[int]): noised image
 
         Returns:
-            Image : restored image using Geometric filter
+            Image: restored image
         """
 
         geometric_filtered_image = []
@@ -621,16 +674,19 @@ class ImageProcessor:
 
         return disp_img
 
-    def add_contraharmonic(self, width, height, noise_degraded_img, q: int = 1):
-        """
-        performs contraharmonic filter on a noised image
+    def add_contraharmonic(
+        self, width: int, height: int, noise_degraded_img: list[int], q: int = 1
+    ) -> Image:
+        """performs geometric filter restoration technique to the noised image
 
         Args:
-            noise_degraded_img ( Image ): noised image
-            q (int, optional): q parameter specifying the order of the filter .Defaults to 1.
+            width (int): width of the image
+            height (int): height of the image
+            noise_degraded_img (list[int]): noised image
+            q (int): order of the filter
 
         Returns:
-            Image : restored image using Contraharmonic filter
+            Image: restored image
         """
 
         contraharmonic_filtered_image = []
@@ -663,7 +719,17 @@ class ImageProcessor:
 
         return disp_img
 
-    def get_uncompressed_image_size(image_data):
+    def get_uncompressed_image_size(
+        image_data: list[tuple[int, int, int]]
+    ) -> dict[str, float]:
+        """get the uncompressed image size
+
+        Args:
+            image_data (list[tuple[int, int, int]]): image data
+
+        Returns:
+            dict[str, float]: size info
+        """
         palette = []
         for data in image_data:
             if data not in palette:
@@ -676,7 +742,17 @@ class ImageProcessor:
             "palette size": len(palette) * 3,  # 3 byte color
         }
 
-    def run_length_encoding(image_data):
+    def run_length_encoding(
+        image_data: list[tuple[int, int, int]]
+    ) -> tuple[list[int], list[tuple[int, int, int]], dict[str, float]]:
+        """apply the run length encoding to the image data
+
+        Args:
+            image_data (list[tuple[int, int, int]]): image data
+
+        Returns:
+            tuple[list[int], list[tuple[int, int, int]], dict[str, float]]: rle data
+        """
         palette = []
         rle_encoded_data = list()
         last_color = -1
@@ -711,7 +787,23 @@ class ImageProcessor:
 
         return rle_encoded_data, palette, size_info
 
-    def run_length_decode(rle_data, palette, width, height):
+    def run_length_decode(
+        rle_data: list[int],
+        palette: list[tuple[int, int, int]],
+        width: int,
+        height: int,
+    ) -> Image:
+        """decode rle encoded data
+
+        Args:
+            rle_data (list[int]): rle encoded data
+            palette (list[tuple[int, int, int]]): image palette
+            width (int): width of the image
+            height (int): height of the image
+
+        Returns:
+            Image: decoded image
+        """
         image_data = list()
         for i in range(0, len(rle_data), 2):
             for j in range(rle_data[i]):
@@ -722,25 +814,24 @@ class ImageProcessor:
 
         return disp_img
 
-    def huffman_coding(image_data):
+    def huffman_coding(
+        image_data: list[tuple[int, int, int]]
+    ) -> tuple[str, dict[tuple[int, int, int], str], dict[str, float]]:
+        """do the huffman coding for the image data
+
+        Args:
+            image_data (list[tuple[int, int, int]]): image data
+
+        Returns:
+            tuple[str, dict[tuple[int, int, int], str], dict[str, float]]: huffman coded data info
+        """
+
         class Node:
             def __init__(self, value, key=None, left=None, right=None) -> None:
                 self.value = value
                 self.key = key
                 self.left = left
                 self.right = right
-
-            def print_self(self):
-                print(
-                    "Value",
-                    self.value,
-                    "Key",
-                    self.key,
-                    "Left",
-                    self.left,
-                    "Right",
-                    self.right,
-                )
 
         # create frequency table
         freq_table = dict()
@@ -771,7 +862,7 @@ class ImageProcessor:
         # map the codes
         huffman_codes = dict()
         # special case when there is only one color to code
-        if len(heap) == 1:
+        if not heap[0].left and not heap[0].right:
             huffman_codes[heap[0].key] = "0"
         # populate huffman codes dict
         heap[0].key = ""
@@ -809,7 +900,23 @@ class ImageProcessor:
 
         return huffman_coded_image_data, huffman_codes, size_info
 
-    def huffman_decode(huffman_data, huffman_codes, width, height):
+    def huffman_decode(
+        huffman_data: str,
+        huffman_codes: dict[tuple[int, int, int], str],
+        width: int,
+        height: int,
+    ) -> Image:
+        """decode the huffman encoded image data
+
+        Args:
+            huffman_data (str): huffman encoded data
+            huffman_codes (dict[tuple[int, int, int], str]): huffman codes
+            width (int): image width
+            height (int): image height
+
+        Returns:
+            Image: decoded image
+        """
         huffman_codes = {v: k for k, v in huffman_codes.items()}
         image_data = list()
 

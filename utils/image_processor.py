@@ -754,7 +754,7 @@ class ImageProcessor:
         # create the huffman codes
         heap = [Node(freq_table[key], key) for key in freq_table]
         # create the tree
-        while 1:
+        while len(heap) > 1:
             left = heap.pop(0)
             right = heap.pop(0)
             entry = Node(left.value + right.value, left=left, right=right)
@@ -770,6 +770,10 @@ class ImageProcessor:
 
         # map the codes
         huffman_codes = dict()
+        # special case when there is only one color to code
+        if len(heap) == 1:
+            huffman_codes[heap[0].key] = "0"
+        # populate huffman codes dict
         heap[0].key = ""
         while len(heap) > 0:
             node = heap.pop()

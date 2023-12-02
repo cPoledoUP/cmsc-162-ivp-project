@@ -260,7 +260,9 @@ def process_image(mode):
                 info += "\nRun-length Encoded Image Information\n"
                 info += f"Image size: {size_info["image size"]} bytes\n"
                 info += f"Palette size: {size_info["palette size"]} bytes\n"
-                info += f"\nCompression ratio: {orig_info["image size"] / size_info["image size"]}"
+                info += "\nCompression Ratio\n"
+                info += f"Image data only: {orig_info["image size"] / size_info["image size"]}"
+                info += f"\nImage data and palette info: {(orig_info["image size"] + orig_info["palette size"]) / (size_info["image size"] + size_info["palette size"])}"
             case "Huffman Coding":
                 huffman_data, huffman_codes, size_info = ImageProcessor.huffman_coding(
                     image_data
@@ -272,10 +274,12 @@ def process_image(mode):
                 info = "Uncompressed Image Information\n"
                 info += f"Image size: {orig_info["image size"]} bytes\n"
                 info += f"Palette size: {orig_info["palette size"]} bytes\n"
-                info += "\nRun-length Encoded Image Information\n"
+                info += "\nHuffman Coded Image Information\n"
                 info += f"Image size: {size_info["image size"]} bytes\n"
                 info += f"Huffman codes size: {size_info["huffman codes size"]} bytes\n"
-                info += f"\nCompression ratio: {orig_info["image size"] / size_info["image size"]}"
+                info += "\nCompression Ratio\n"
+                info += f"Image data only: {orig_info["image size"] / size_info["image size"]}"
+                info += f"\nImage data and huffman codes: {(orig_info["image size"] + orig_info["palette size"]) / (size_info["image size"] + size_info["huffman codes size"])}"
 
             case _:
                 current_frame.stop_loading()
@@ -311,7 +315,7 @@ menubar = tk.Menu(root)
 root.config(menu=menubar)
 
 file_menu = tk.Menu(menubar, tearoff=False)
-file_menu.add_command(label="Open image", command=open_file)
+file_menu.add_command(label="Open image", command=open_file, accelerator="Ctrl+O")
 menubar.add_cascade(label="File", menu=file_menu)
 menubar.add_command(label="About...", command=show_about)
 
@@ -537,6 +541,10 @@ palette_image = ImageFrame(metadata_frame, closable=False)
 metadata_title.pack(anchor="nw")
 metadata_label.pack(anchor="nw", pady=(10, 25))
 palette_title.pack(anchor="nw")
+
+# setup keyboard shortcuts
+root.bind("<Control-o>", lambda event: open_file())
+root.bind("<Control-O>", lambda event: open_file())
 
 # start app
 root.mainloop()

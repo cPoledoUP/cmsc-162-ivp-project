@@ -236,7 +236,7 @@ def process_image(mode):
                 if q == None:
                     raise Exception("Cancelled operation")
                 image = ImageProcessor().add_contraharmonic(
-                    width, height, LAST_NOISED_DATA, -1
+                    width, height, LAST_NOISED_DATA, q
                 )
                 info = f"q value: {q}"
             case "Order-Statistics Filter":

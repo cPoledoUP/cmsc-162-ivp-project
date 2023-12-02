@@ -594,8 +594,8 @@ class ImageProcessor:
             Image: noised image
         """
 
-        mean = 0  # responsible for the bell curved shape of the distribution
-        var = 20  # controls the amount of noise | variance determines the spread of the noise values | ^ Variance = Noisier Image
+        mean = 35  # responsible for the bell curved shape of the distribution
+        var = 10  # controls the amount of noise | variance determines the spread of the noise values | ^ Variance = Noisier Image
 
         gaussian_values = []
 
@@ -622,7 +622,7 @@ class ImageProcessor:
         """
 
         alpha = 2  # controls the shape of the noise distribution | amount of noise
-        beta = 20  # Adjust the beta value to control the scale of the noise distribution (overall brightness of the image)
+        beta = 10  # Adjust the beta value to control the scale of the noise distribution (overall brightness of the image)
 
         erlang_values = []
 

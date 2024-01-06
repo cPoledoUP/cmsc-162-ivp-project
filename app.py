@@ -11,6 +11,7 @@ from utils.custom_tk_widgets import ToolTipButton, ImageFrame, ask_choice
 from utils.button_icon_gen import IvpBtnIcon
 from utils.image_parser import ImageParser
 from utils.image_processor import ImageProcessor
+import zipfile
 
 # App globals
 CURRENT_IMAGE = None
@@ -31,52 +32,85 @@ def open_file():
     global CURRENT_IMAGE
     global GRAYSCALE_DATA
 
-    file_types = [("Image Files", ["*.pcx", "*.jpg", "*.jpeg", "*.png", "*.bmp"])]
+    file_types = [("Image Files", ["*.pcx", "*.jpg", "*.jpeg", "*.png", "*.bmp"]), ("Compressed Image", ["*.zip"])]
     filename = filedialog.askopenfilename(
         title="Open an image file", filetypes=file_types
     )
-    current_frame = main_notebook.nametowidget(main_notebook.select())
     if filename:
-        try:
-            current_frame.start_loading()
-            CURRENT_IMAGE = ImageParser.parse_image(filename)
-            current_frame.stop_loading()
+        # extract all images if compressed
+        if filename.endswith("zip"):
+            with zipfile.ZipFile(filename, "r") as archive:
+                namelist = archive.namelist()
+                archive.extractall(filename[:-4])
+                # remove the empty .zip file in the output folder
+                filename = ["/".join([filename[:-4], name]) for name in namelist]
+
+        # load single image
+        else:
+            filename = [filename]
+        
+        for i in range(len(filename)):
             main_notebook.select(0)
-            main_frame.display_image(
-                ImageProcessor.get_displayable_image(
-                    CURRENT_IMAGE["pixel_data"],
-                    CURRENT_IMAGE["width"],
-                    CURRENT_IMAGE["height"],
-                )
-            )
-            metadata_title.configure(text="Image Metadata")
-            metadata_label.configure(text=CURRENT_IMAGE["metadata"])
-            if CURRENT_IMAGE["palette_data"]:
-                palette_title.configure(text="Color Palette")
-                palette_image.display_image(
-                    ImageProcessor.get_displayable_palette(
-                        CURRENT_IMAGE["palette_data"], 10
-                    ),
-                    False,
-                    False,
-                )
-                palette_image.pack(pady=10)
-            else:
-                palette_title.configure(text="")
-                palette_image.remove_image()
-                palette_image.pack_forget()
+            current_frame = None
+            try:
+                # for the first image, put it in the main frame
+                if i == 0:
+                    current_frame = main_frame
+                    current_frame.start_loading()
+                    CURRENT_IMAGE = ImageParser.parse_image(filename[i])
+                    main_frame.display_image(
+                        ImageProcessor.get_displayable_image(
+                            CURRENT_IMAGE["pixel_data"],
+                            CURRENT_IMAGE["width"],
+                            CURRENT_IMAGE["height"],
+                        )
+                    )
+                    metadata_title.configure(text="Image Metadata")
+                    metadata_label.configure(text=CURRENT_IMAGE["metadata"])
+                    if CURRENT_IMAGE["palette_data"]:
+                        palette_title.configure(text="Color Palette")
+                        palette_image.display_image(
+                            ImageProcessor.get_displayable_palette(
+                                CURRENT_IMAGE["palette_data"], 10
+                            ),
+                            False,
+                            False,
+                        )
+                        palette_image.pack(pady=10)
+                    else:
+                        palette_title.configure(text="")
+                        palette_image.remove_image()
+                        palette_image.pack_forget()
 
-            GRAYSCALE_DATA = list(
-                ImageProcessor.get_grayscale_image(
-                    CURRENT_IMAGE["pixel_data"],
-                    CURRENT_IMAGE["width"],
-                    CURRENT_IMAGE["height"],
-                ).getdata()
-            )
+                    GRAYSCALE_DATA = list(
+                        ImageProcessor.get_grayscale_image(
+                            CURRENT_IMAGE["pixel_data"],
+                            CURRENT_IMAGE["width"],
+                            CURRENT_IMAGE["height"],
+                        ).getdata()
+                    )
 
-        except Exception as e:
-            current_frame.stop_loading()
-            messagebox.showerror("Error opening file", str(e))
+                # for the rest, in a new tab
+                else:
+                    new_frame = ImageFrame(main_notebook, title=f"img{i}")
+                    new_frame.pack(fill="both", expand=True)
+                    main_notebook.add(new_frame, text=f"img{i}")
+                    main_notebook.select(new_frame)
+                    current_frame = new_frame
+                    current_frame.start_loading()
+                    img_to_disp = ImageParser.parse_image(filename[i])
+                    new_frame.display_image(
+                        ImageProcessor.get_displayable_image(
+                            img_to_disp["pixel_data"],
+                            img_to_disp["width"],
+                            img_to_disp["height"],
+                        )
+                    )
+                current_frame.stop_loading()
+
+            except Exception as e:
+                current_frame.stop_loading()
+                messagebox.showerror("Error opening file", str(e))
 
 
 def process_image(mode):

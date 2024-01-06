@@ -11,6 +11,10 @@ from utils.custom_tk_widgets import ToolTipButton, ImageFrame, ask_choice
 from utils.button_icon_gen import IvpBtnIcon
 from utils.image_parser import ImageParser
 from utils.image_processor import ImageProcessor
+from zipfile import ZipFile, ZIP_LZMA
+import os
+import pathlib
+
 
 # App globals
 CURRENT_IMAGE = None
@@ -26,6 +30,36 @@ def show_about():
         "Made for CMSC 162 Introduction to Image and Video Processing\n\nAuthors:\nClent Japhet Poledo\nFrancis Albert Celeste",
     )
 
+
+def open_folder():
+    
+    folder_path = filedialog.askdirectory(
+        title="select folder"
+    )
+    for file in os.listdir(folder_path):
+        filetypes_allowed = [".pcx", ".jpg", ".jpeg", ".png", ".bmp"]
+        file_type = pathlib.Path(file).suffix
+        if file_type not in filetypes_allowed:
+            messagebox.showerror("Error", "Folder should only contain image files")
+            return
+        else:
+            continue
+        
+    folder_string = folder_path.split('/')
+    print(folder_string[-1])
+   
+    folder_name = "./" + folder_string[-1]
+    print(folder_name)
+    
+    folder_path = pathlib.Path(folder_name)
+    print(folder_path)
+    
+    zip_path = './Compressed.zip'
+    
+    with ZipFile(zip_path, 'w', ZIP_LZMA) as zip:
+        for file in folder_path.iterdir():
+            zip.write(file, arcname=file.name)
+    
 
 def open_file():
     global CURRENT_IMAGE
@@ -314,10 +348,18 @@ root.state("zoomed")
 menubar = tk.Menu(root)
 root.config(menu=menubar)
 
+# File menu to open images
 file_menu = tk.Menu(menubar, tearoff=False)
 file_menu.add_command(label="Open image", command=open_file, accelerator="Ctrl+O")
 menubar.add_cascade(label="File", menu=file_menu)
+
+# menu button for batch processing
+batch_menu = tk.Menu(menubar, tearoff=False)
+batch_menu.add_command(label="load folder", command=open_folder)
+menubar.add_cascade(label="Batch Processing", menu=batch_menu)
+
 menubar.add_command(label="About...", command=show_about)
+
 
 ##### setup main frame
 main_notebook = ttk.Notebook(root)

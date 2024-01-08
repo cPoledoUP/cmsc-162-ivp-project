@@ -45,34 +45,28 @@ def open_folder():
             return
         else:
             continue
-        
-    folder_string = folder_path.split('/')
-    print(folder_string[-1])
-   
-    folder_name = "./" + folder_string[-1]
-    print(folder_name)
     
-    folder_path = pathlib.Path(folder_name)
-    print(folder_path)
-    
-    zip_path = './Compressed.zip'
+    zip_path = folder_path + "/" + folder_path.split("/")[-1] + ".ivp"
+    files = os.listdir(folder_path)
     
     with ZipFile(zip_path, 'w', ZIP_LZMA) as zip:
-        for file in folder_path.iterdir():
-            zip.write(file, arcname=file.name)
+        for file in files:
+            zip.write("/".join([folder_path, file]), arcname=file)
+    
+    os.startfile(folder_path)
     
 
 def open_file():
     global CURRENT_IMAGE
     global GRAYSCALE_DATA
 
-    file_types = [("Image Files", ["*.pcx", "*.jpg", "*.jpeg", "*.png", "*.bmp"]), ("Compressed Image", ["*.zip"])]
+    file_types = [("Image/Compressed Files", ["*.pcx", "*.jpg", "*.jpeg", "*.png", "*.bmp", "*.ivp"]), ("Image Files", ["*.pcx", "*.jpg", "*.jpeg", "*.png", "*.bmp"]), ("Compressed Image", ["*.ivp"])]
     filename = filedialog.askopenfilename(
         title="Open an image file", filetypes=file_types
     )
     if filename:
         # extract all images if compressed
-        if filename.endswith("zip"):
+        if filename.endswith("ivp"):
             with zipfile.ZipFile(filename, "r") as archive:
                 namelist = archive.namelist()
                 archive.extractall(filename[:-4])

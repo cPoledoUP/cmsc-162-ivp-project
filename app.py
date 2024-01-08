@@ -127,13 +127,13 @@ def open_file():
 
                 # for the rest, in a new tab
                 else:
-                    new_frame = ImageFrame(main_notebook, title=f"img{i}")
+                    img_to_disp = ImageParser.parse_image(filename[i])
+                    new_frame = ImageFrame(main_notebook, title=f"img{i}", parsable_image_data=img_to_disp)
                     new_frame.pack(fill="both", expand=True)
                     main_notebook.add(new_frame, text=f"img{i}")
                     main_notebook.select(new_frame)
                     current_frame = new_frame
                     current_frame.start_loading()
-                    img_to_disp = ImageParser.parse_image(filename[i])
                     new_frame.display_image(
                         ImageProcessor.get_displayable_image(
                             img_to_disp["pixel_data"],
@@ -146,6 +146,52 @@ def open_file():
             except Exception as e:
                 current_frame.stop_loading()
                 messagebox.showerror("Error opening file", str(e))
+
+def update_orig_image():
+    global CURRENT_IMAGE, GRAYSCALE_DATA
+
+    current_frame = main_notebook.nametowidget(main_notebook.select())
+
+    if current_frame.parsable_image_data:
+        CURRENT_IMAGE = current_frame.parsable_image_data
+
+        main_frame.display_image(
+            ImageProcessor.get_displayable_image(
+                CURRENT_IMAGE["pixel_data"],
+                CURRENT_IMAGE["width"],
+                CURRENT_IMAGE["height"],
+            )
+        )
+        metadata_title.configure(text="Image Metadata")
+        metadata_label.configure(text=CURRENT_IMAGE["metadata"])
+        if CURRENT_IMAGE["palette_data"]:
+            palette_title.configure(text="Color Palette")
+            palette_image.display_image(
+                ImageProcessor.get_displayable_palette(
+                    CURRENT_IMAGE["palette_data"], 10
+                ),
+                False,
+                False,
+            )
+            palette_image.pack(pady=10)
+        else:
+            palette_title.configure(text="")
+            palette_image.remove_image()
+            palette_image.pack_forget()
+
+        GRAYSCALE_DATA = list(
+            ImageProcessor.get_grayscale_image(
+                CURRENT_IMAGE["pixel_data"],
+                CURRENT_IMAGE["width"],
+                CURRENT_IMAGE["height"],
+            ).getdata()
+        )
+
+        main_notebook.select(0)
+    elif not current_frame.closable:
+        messagebox.showerror("Error", "This image is already being edited")
+    else:
+        messagebox.showerror("Error", "This image is not editable")
 
 
 def process_image(mode):
@@ -390,7 +436,8 @@ menubar.add_cascade(label="File", menu=file_menu)
 
 # menu button for batch processing
 batch_menu = tk.Menu(menubar, tearoff=False)
-batch_menu.add_command(label="Load Folder", command=open_folder, accelerator="Ctrl+F")
+batch_menu.add_command(label="Compress folder images", command=open_folder, accelerator="Ctrl+F")
+batch_menu.add_checkbutton(label="Edit current image", command=update_orig_image, accelerator="Ctrl+U")
 menubar.add_cascade(label="Batch Processing", menu=batch_menu)
 
 menubar.add_command(label="About...", command=show_about)
@@ -624,6 +671,8 @@ root.bind("<Control-o>", lambda event: open_file())
 root.bind("<Control-O>", lambda event: open_file())
 root.bind("<Control-f>", lambda event: open_folder())
 root.bind("<Control-F>", lambda event: open_folder())
+root.bind("<Control-u>", lambda event: update_orig_image())
+root.bind("<Control-U>", lambda event: update_orig_image())
 
 # start app
 root.mainloop()

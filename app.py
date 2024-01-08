@@ -11,7 +11,6 @@ from utils.custom_tk_widgets import ToolTipButton, ImageFrame, ask_choice
 from utils.button_icon_gen import IvpBtnIcon
 from utils.image_parser import ImageParser
 from utils.image_processor import ImageProcessor
-import zipfile
 from zipfile import ZipFile, ZIP_LZMA
 import os
 import pathlib
@@ -33,10 +32,17 @@ def show_about():
 
 
 def open_folder():
+    current_frame = main_notebook.nametowidget(main_notebook.select())
+    current_frame.start_loading()
     
     folder_path = filedialog.askdirectory(
         title="select folder"
     )
+
+    if not folder_path:
+        current_frame.stop_loading()
+        return
+
     for file in os.listdir(folder_path):
         filetypes_allowed = [".pcx", ".jpg", ".jpeg", ".png", ".bmp"]
         file_type = pathlib.Path(file).suffix
@@ -54,6 +60,7 @@ def open_folder():
             zip.write("/".join([folder_path, file]), arcname=file)
     
     os.startfile(folder_path)
+    current_frame.stop_loading()
     
 
 def open_file():
@@ -67,7 +74,7 @@ def open_file():
     if filename:
         # extract all images if compressed
         if filename.endswith("ivp"):
-            with zipfile.ZipFile(filename, "r") as archive:
+            with ZipFile(filename, "r") as archive:
                 namelist = archive.namelist()
                 archive.extractall(filename[:-4])
                 # remove the empty .zip file in the output folder
@@ -383,7 +390,7 @@ menubar.add_cascade(label="File", menu=file_menu)
 
 # menu button for batch processing
 batch_menu = tk.Menu(menubar, tearoff=False)
-batch_menu.add_command(label="load folder", command=open_folder)
+batch_menu.add_command(label="Load Folder", command=open_folder, accelerator="Ctrl+F")
 menubar.add_cascade(label="Batch Processing", menu=batch_menu)
 
 menubar.add_command(label="About...", command=show_about)
@@ -615,6 +622,8 @@ palette_title.pack(anchor="nw")
 # setup keyboard shortcuts
 root.bind("<Control-o>", lambda event: open_file())
 root.bind("<Control-O>", lambda event: open_file())
+root.bind("<Control-f>", lambda event: open_folder())
+root.bind("<Control-F>", lambda event: open_folder())
 
 # start app
 root.mainloop()
